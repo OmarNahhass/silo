@@ -1,39 +1,45 @@
 import warnings
 warnings.filterwarnings("ignore")  # Suppress all warnings
 
+import streamlit as st
 from data_fetcher import fetch_data
 from models.linear_regression import perform_linear_regression
 from models.arima import perform_arima_prediction
 from models.ets import perform_ets_prediction
 
 def main():
-    # Welcome to CryptoCast
-    print("\nWelcome to CryptoCast!")
-    print("This program uses 3 different models to predict cryptocurrency prices:")
-    print("1. Linear Regression (not recommended for accurate predictions)")
-    print("2. ARIMA (AutoRegressive Integrated Moving Average)")
-    print("3. ETS (Error, Trend, Seasonality)")
-    print("\n" + "-" * 70 + "\n")
+    # Streamlit app title
+    st.title("CryptoCast")
+
+    st.write("\n" + "-" * 70 + "\n")
 
     # Get user input for the cryptocurrency ticker
-    ticker = input("Please enter a cryptocurrency ticker symbol (e.g., BTC, ETH): ").upper()
+    ticker = st.text_input("Enter a cryptocurency ticker symbol: " ).upper()
 
     # Fetch data for the specified ticker
-    try:
-        data = fetch_data(ticker)
-    except Exception as e:
-        print(f"\nError fetching data for {ticker}: {e}")
-        return
+    if st.button("Fetch Data and Predict"):
+        try:
+            data = fetch_data(ticker)
+            st.subheader(f"Fetched Data for {ticker}")
+            st.write(data)
 
-    # Call the functions to perform predictions
-    print(f"\nUsing Linear Regression for {ticker}:")
-    perform_linear_regression(data)
+            # Perform predictions
+            st.subheader("Predictions")
 
-    print(f"\nUsing ARIMA for {ticker}:")
-    perform_arima_prediction(data)
+            st.write("### Linear Regression Prediction")
+            lr_prediction = perform_linear_regression(data)
+            st.write(f"Prediction of next day's closing price using Linear Regression: {lr_prediction:.2f}")
 
-    print(f"\nUsing ETS for {ticker}:")
-    perform_ets_prediction(data)
+            st.write("### ARIMA Prediction")
+            arima_prediction = perform_arima_prediction(data)
+            st.write(f"Prediction of next day's closing price using ARIMA: {arima_prediction:.2f}")
+
+            st.write("### ETS Prediction")
+            ets_prediction = perform_ets_prediction(data)
+            st.write(f"Prediction of next day's closing price using ETS: {ets_prediction:.2f}")
+
+        except Exception as e:
+            st.error(f"Error fetching data for {ticker}: {e}")
 
 # Run the main function
 if __name__ == "__main__":
