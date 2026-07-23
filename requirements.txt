@@ -1,4 +1,6 @@
-alpha_vantage
+streamlit
+yfinance>=1.0
+plotly
 scikit-learn
 statsmodels
 numpy
