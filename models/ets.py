@@ -1,19 +1,12 @@
-import pandas as pd
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 from utils.metrics import rmse
+from utils.timeseries import prep_daily_close
 
 
-def _prep(data: pd.DataFrame) -> pd.Series:
-    close = data["Close"].copy()
-    close.index = pd.to_datetime(close.index)
-    close = close.sort_index().asfreq("D").interpolate()
-    return close
-
-
-def perform_ets_prediction(data: pd.DataFrame, test_frac: float = 0.2):
+def perform_ets_prediction(data, test_frac: float = 0.2):
     """Holt's linear trend method: level + trend smoothing, no seasonality (daily price data)."""
-    close = _prep(data)
+    close = prep_daily_close(data)
 
     split = max(10, int(len(close) * (1 - test_frac)))
     train, test = close.iloc[:split], close.iloc[split:]

@@ -1,15 +1,23 @@
 import warnings
 warnings.filterwarnings("ignore")
 
+import pandas as pd
 import streamlit as st
 
 from data_fetcher import fetch_data, PERIOD_OPTIONS
 from models.linear_regression import perform_linear_regression
 from models.arima import perform_arima_prediction, ORDER as ARIMA_ORDER
+from models.sarima import perform_sarima_prediction, ORDER as SARIMA_ORDER, SEASONAL_ORDER
 from models.ets import perform_ets_prediction
+from models.prophet_style import (
+    perform_prophet_style_prediction,
+    N_CHANGEPOINTS,
+    FOURIER_ORDER,
+)
 from models.polynomial_regression import perform_polynomial_regression, DEGREE as POLY_DEGREE
 from models.knn import perform_knn_prediction, N_NEIGHBORS
 from models.random_forest import perform_random_forest_prediction
+from models.gradient_boosting import perform_gradient_boosting_prediction
 from models.svr import perform_svr_prediction, EPSILON as SVR_EPSILON
 from utils.plotting import plot_price_history, plot_prediction
 
@@ -36,6 +44,18 @@ MODELS = [
                 "and mean-reverting behavior that a flat line can't.",
     },
     {
+        "key": "sarima",
+        "name": "SARIMA",
+        "run": perform_sarima_prediction,
+        "math": lambda: st.latex(
+            r"\phi(L)\,\Phi(L^7)\,(1-L)(1-L^7)\,y_t = \theta(L)\,\Theta(L^7)\,\varepsilon_t"
+        ),
+        "note": f"SARIMA{SARIMA_ORDER}x{SEASONAL_ORDER}: ARIMA plus a second autoregressive/moving-"
+                "average block applied 7 days apart, on top of a *weekly* seasonal differencing "
+                "term. Meant to capture a repeating weekly pattern in the price on top of the "
+                "ordinary day-to-day momentum ARIMA already models.",
+    },
+    {
         "key": "ets",
         "name": "ETS (Holt's Linear Trend)",
         "run": perform_ets_prediction,
@@ -46,6 +66,28 @@ MODELS = [
         ),
         "note": "Exponentially smooths a *level* and a *trend* component separately, then "
                 "extrapolates the trend forward. Weights recent observations more heavily.",
+    },
+    {
+        "key": "prophet",
+        "name": "Prophet-style Decomposition",
+        "run": perform_prophet_style_prediction,
+        "math": lambda: st.latex(
+            r"y(t) = \underbrace{k\,t + m + \textstyle\sum_{j=1}^{"
+            + str(N_CHANGEPOINTS)
+            + r"} \delta_j \max(0, t - s_j)}_{\text{piecewise-linear trend}} + "
+            r"\underbrace{\textstyle\sum_{n=1}^{"
+            + str(FOURIER_ORDER)
+            + r"} \big(a_n \sin\tfrac{2\pi n t}{7} + b_n \cos\tfrac{2\pi n t}{7}\big)}"
+            r"_{\text{weekly seasonality}}"
+        ),
+        "note": f"A hand-built version of Facebook Prophet's model: a trend line allowed to bend "
+                f"at {N_CHANGEPOINTS} fixed changepoints $s_j$, plus a weekly cycle written as a "
+                f"{FOURIER_ORDER}-harmonic Fourier series, fit *together* in one linear regression "
+                "(a piecewise-linear function and a periodic function are both just linear "
+                "combinations of basis functions — a line, some hinges, some sines and cosines). "
+                "Real Prophet fits the same additive structure with Bayesian priors that damp "
+                "down the changepoint slopes; this version is the plain, un-regularized least-"
+                "squares fit, so it can overreact to a sharp trend change right before the split.",
     },
     {
         "key": "poly",
@@ -87,6 +129,20 @@ MODELS = [
                 "and a random subset of features. Each tree repeatedly splits the feature space "
                 "to minimize the variance of returns within each resulting group; averaging many "
                 "such trees ($B$) smooths out the overfitting any single tree would have.",
+    },
+    {
+        "key": "gbm",
+        "name": "Gradient Boosting (XGBoost)",
+        "run": perform_gradient_boosting_prediction,
+        "math": lambda: st.latex(
+            r"F_0(x) = \bar{r}, \quad F_m(x) = F_{m-1}(x) + \eta \, h_m(x), "
+            r"\quad h_m \approx \arg\min_h \sum_i \left[-\frac{\partial \mathcal{L}(r_i, F_{m-1}(x_i))}{\partial F_{m-1}(x_i)} - h(x_i)\right]^2"
+        ),
+        "note": "Builds trees sequentially rather than independently (unlike Random Forest): each "
+                "new tree $h_m$ is fit to approximate the *negative gradient* of the loss from the "
+                "ensemble so far — effectively, each tree corrects the previous ensemble's "
+                "residual errors, scaled down by a small learning rate $\\eta$ so no single tree "
+                "dominates the final prediction.",
     },
     {
         "key": "svr",
@@ -159,6 +215,21 @@ def main():
                 col.caption(f"Holdout RMSE: ${rmse_val:.2f}" if rmse_val == rmse_val else "Holdout RMSE: n/a")
             except Exception as e:
                 col.error(f"{spec['name']} failed: {e}")
+
+    st.markdown("#### Leaderboard (ranked by holdout RMSE — lower is better)")
+    leaderboard = pd.DataFrame([
+        {
+            "Model": spec["name"],
+            "Prediction": results[spec["key"]]["prediction"],
+            "Holdout RMSE": results[spec["key"]]["rmse"],
+        }
+        for spec in MODELS if spec["key"] in results
+    ]).sort_values("Holdout RMSE", na_position="last").reset_index(drop=True)
+    leaderboard.index += 1
+    st.dataframe(
+        leaderboard.style.format({"Prediction": "${:.2f}", "Holdout RMSE": "${:.2f}"}),
+        use_container_width=True,
+    )
 
     for spec in MODELS:
         if spec["key"] not in results:
