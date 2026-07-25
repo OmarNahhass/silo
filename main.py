@@ -23,10 +23,29 @@ from utils.plotting import plot_price_history, plot_prediction
 
 st.set_page_config(page_title="CryptoCast", page_icon="📈", layout="wide")
 
+CARD_CSS = """
+<style>
+[data-testid="stMetric"] {
+    background-color: #ffffff;
+    border: 1px solid rgba(11,11,11,0.10);
+    border-radius: 10px;
+    padding: 16px 16px 12px 16px;
+    box-shadow: 0 1px 2px rgba(11,11,11,0.04);
+}
+[data-testid="stMetricLabel"] {
+    font-weight: 600;
+}
+</style>
+"""
+
+STATISTICAL = "Statistical"
+MACHINE_LEARNING = "Machine Learning"
+
 MODELS = [
     {
         "key": "lr",
         "name": "Linear Regression",
+        "category": STATISTICAL,
         "run": perform_linear_regression,
         "math": lambda: st.latex(r"\text{Close}_{t+1} = \beta_0 + \beta_1 \cdot \text{Close}_t + \varepsilon_t"),
         "note": "Fits a straight line between today's close and tomorrow's close, "
@@ -35,6 +54,7 @@ MODELS = [
     {
         "key": "arima",
         "name": "ARIMA",
+        "category": STATISTICAL,
         "run": perform_arima_prediction,
         "math": lambda: st.latex(
             r"\left(1 - \sum_{i=1}^{5}\phi_i L^i\right)(1-L)\,y_t = \varepsilon_t"
@@ -46,6 +66,7 @@ MODELS = [
     {
         "key": "sarima",
         "name": "SARIMA",
+        "category": STATISTICAL,
         "run": perform_sarima_prediction,
         "math": lambda: st.latex(
             r"\phi(L)\,\Phi(L^7)\,(1-L)(1-L^7)\,y_t = \theta(L)\,\Theta(L^7)\,\varepsilon_t"
@@ -58,6 +79,7 @@ MODELS = [
     {
         "key": "ets",
         "name": "ETS (Holt's Linear Trend)",
+        "category": STATISTICAL,
         "run": perform_ets_prediction,
         "math": lambda: st.latex(
             r"\begin{aligned} l_t &= \alpha y_t + (1-\alpha)(l_{t-1}+b_{t-1}) \\ "
@@ -70,6 +92,7 @@ MODELS = [
     {
         "key": "prophet",
         "name": "Prophet-style Decomposition",
+        "category": STATISTICAL,
         "run": perform_prophet_style_prediction,
         "math": lambda: st.latex(
             r"y(t) = \underbrace{k\,t + m + \textstyle\sum_{j=1}^{"
@@ -92,6 +115,7 @@ MODELS = [
     {
         "key": "poly",
         "name": "Polynomial Regression",
+        "category": MACHINE_LEARNING,
         "run": perform_polynomial_regression,
         "math": lambda: st.latex(
             r"\hat{r}_{t+1} = \beta_0 + \sum_{j} \beta_j x_j + \sum_{j \le k} \beta_{jk}\, x_j x_k"
@@ -106,6 +130,7 @@ MODELS = [
     {
         "key": "knn",
         "name": "k-Nearest Neighbors",
+        "category": MACHINE_LEARNING,
         "run": perform_knn_prediction,
         "math": lambda: st.latex(
             r"\hat{r}_{t+1} = \frac{1}{k}\sum_{i \,\in\, N_k(x)} r_i, "
@@ -119,6 +144,7 @@ MODELS = [
     {
         "key": "rf",
         "name": "Random Forest",
+        "category": MACHINE_LEARNING,
         "run": perform_random_forest_prediction,
         "math": lambda: st.latex(
             r"\hat{r} = \frac{1}{B}\sum_{b=1}^{B} T_b(x), \quad "
@@ -133,6 +159,7 @@ MODELS = [
     {
         "key": "gbm",
         "name": "Gradient Boosting (XGBoost)",
+        "category": MACHINE_LEARNING,
         "run": perform_gradient_boosting_prediction,
         "math": lambda: st.latex(
             r"F_0(x) = \bar{r}, \quad F_m(x) = F_{m-1}(x) + \eta \, h_m(x), "
@@ -147,6 +174,7 @@ MODELS = [
     {
         "key": "svr",
         "name": "Support Vector Regression",
+        "category": MACHINE_LEARNING,
         "run": perform_svr_prediction,
         "math": lambda: st.latex(
             r"\min_{w,b} \tfrac{1}{2}\|w\|^2 + C\sum_i \max\!\big(0,\, |r_i - (w \cdot \phi(x_i) + b)| - \varepsilon\big)"
@@ -158,8 +186,72 @@ MODELS = [
     },
 ]
 
+MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+
+def render_metric_tile(col, spec, result, last_close):
+    delta = result["prediction"] - last_close
+    col.metric(
+        spec["name"],
+        f"${result['prediction']:.2f}",
+        f"{delta:+.2f} ({delta / last_close:+.2%})",
+    )
+    rmse_val = result["rmse"]
+    col.caption(f"Holdout RMSE: ${rmse_val:.2f}" if rmse_val == rmse_val else "Holdout RMSE: n/a")
+
+
+def render_overview_tab(results, last_close):
+    for category in (STATISTICAL, MACHINE_LEARNING):
+        cat_specs = [spec for spec in MODELS if spec["category"] == category]
+        st.markdown(f"##### {category} Models")
+        cols = st.columns(len(cat_specs))
+        for col, spec in zip(cols, cat_specs):
+            if spec["key"] in results:
+                render_metric_tile(col, spec, results[spec["key"]], last_close)
+            else:
+                col.error(f"{spec['name']} failed")
+
+    st.markdown("#### Leaderboard (ranked by holdout RMSE — lower is better)")
+    leaderboard = pd.DataFrame([
+        {
+            "Model": spec["name"],
+            "Category": spec["category"],
+            "Prediction": results[spec["key"]]["prediction"],
+            "Holdout RMSE": results[spec["key"]]["rmse"],
+        }
+        for spec in MODELS if spec["key"] in results
+    ]).sort_values("Holdout RMSE", na_position="last").reset_index(drop=True)
+    leaderboard.index += 1
+    leaderboard.insert(0, "Rank", [MEDALS.get(i, str(i)) for i in leaderboard.index])
+    st.dataframe(
+        leaderboard.style.format({"Prediction": "${:.2f}", "Holdout RMSE": "${:.2f}"}),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+def render_model_explorer_tab(results, errors, close, last_close):
+    selected_name = st.selectbox("Choose a model to inspect", [spec["name"] for spec in MODELS])
+    spec = next(s for s in MODELS if s["name"] == selected_name)
+
+    if spec["key"] not in results:
+        st.error(f"{spec['name']} failed to run: {errors.get(spec['key'])}")
+        return
+
+    result = results[spec["key"]]
+    st.caption(spec["category"])
+    render_metric_tile(st, spec, result, last_close)
+    st.plotly_chart(
+        plot_prediction(close, result["fitted"], result["prediction"], spec["name"]),
+        use_container_width=True,
+    )
+    st.markdown("##### How it works")
+    spec["math"]()
+    st.markdown(spec["note"])
+
 
 def main():
+    st.markdown(CARD_CSS, unsafe_allow_html=True)
     st.title("CryptoCast")
     st.caption("Forecasting stocks and crypto with classical statistics and machine learning.")
 
@@ -171,78 +263,59 @@ def main():
         period = st.selectbox("History length", PERIOD_OPTIONS, index=2)
         run = st.button("Run Forecast", type="primary", use_container_width=True)
 
-    if not run:
+    # st.button only returns True on the exact rerun it was clicked on -- any later widget
+    # interaction (e.g. the Model Explorer dropdown below) triggers its own rerun where `run`
+    # goes back to False. Cache the computed forecast in session_state so it survives those
+    # reruns instead of the whole page collapsing back to the "not run yet" state.
+    if run:
+        if not ticker:
+            st.error("Enter a ticker symbol first.")
+        else:
+            try:
+                with st.spinner(f"Fetching {ticker} data..."):
+                    data = fetch_data(ticker, asset_type=asset_type, period=period)
+            except Exception as e:
+                st.error(f"Couldn't fetch data for {ticker}: {e}")
+                data = None
+
+            if data is not None:
+                close = data["Close"].dropna()
+                results, errors = {}, {}
+                with st.spinner("Running forecasts..."):
+                    for spec in MODELS:
+                        try:
+                            results[spec["key"]] = spec["run"](data)
+                        except Exception as e:
+                            errors[spec["key"]] = str(e)
+                st.session_state.forecast = {
+                    "ticker": ticker,
+                    "data": data,
+                    "close": close,
+                    "last_close": float(close.iloc[-1]),
+                    "results": results,
+                    "errors": errors,
+                }
+
+    if "forecast" not in st.session_state:
         st.info("Choose an asset type and ticker in the sidebar, then click **Run Forecast**.")
         return
 
-    if not ticker:
-        st.error("Enter a ticker symbol first.")
-        return
-
-    try:
-        with st.spinner(f"Fetching {ticker} data..."):
-            data = fetch_data(ticker, asset_type=asset_type, period=period)
-    except Exception as e:
-        st.error(f"Couldn't fetch data for {ticker}: {e}")
-        return
-
-    st.subheader(f"{ticker} — {len(data)} trading days")
-    st.plotly_chart(plot_price_history(data, ticker), use_container_width=True)
+    state = st.session_state.forecast
+    st.subheader(f"{state['ticker']} — {len(state['data'])} trading days")
+    st.plotly_chart(plot_price_history(state["data"], state["ticker"]), use_container_width=True)
 
     with st.expander("Raw data"):
-        st.dataframe(data, use_container_width=True)
+        st.dataframe(state["data"], use_container_width=True)
 
     st.subheader("Forecasts")
-    close = data["Close"].dropna()
-    last_close = float(close.iloc[-1])
-
-    results = {}
-    row_size = 4
-    for row_start in range(0, len(MODELS), row_size):
-        row_specs = MODELS[row_start:row_start + row_size]
-        cols = st.columns(row_size)
-        for col, spec in zip(cols, row_specs):
-            try:
-                result = spec["run"](data)
-                results[spec["key"]] = result
-                delta = result["prediction"] - last_close
-                col.metric(
-                    spec["name"],
-                    f"${result['prediction']:.2f}",
-                    f"{delta:+.2f} ({delta / last_close:+.2%})",
-                )
-                rmse_val = result["rmse"]
-                col.caption(f"Holdout RMSE: ${rmse_val:.2f}" if rmse_val == rmse_val else "Holdout RMSE: n/a")
-            except Exception as e:
-                col.error(f"{spec['name']} failed: {e}")
-
-    st.markdown("#### Leaderboard (ranked by holdout RMSE — lower is better)")
-    leaderboard = pd.DataFrame([
-        {
-            "Model": spec["name"],
-            "Prediction": results[spec["key"]]["prediction"],
-            "Holdout RMSE": results[spec["key"]]["rmse"],
-        }
-        for spec in MODELS if spec["key"] in results
-    ]).sort_values("Holdout RMSE", na_position="last").reset_index(drop=True)
-    leaderboard.index += 1
-    st.dataframe(
-        leaderboard.style.format({"Prediction": "${:.2f}", "Holdout RMSE": "${:.2f}"}),
-        use_container_width=True,
-    )
-
-    for spec in MODELS:
-        if spec["key"] not in results:
-            continue
-        result = results[spec["key"]]
-        st.markdown(f"#### {spec['name']}")
-        st.plotly_chart(
-            plot_prediction(close, result["fitted"], result["prediction"], spec["name"]),
-            use_container_width=True,
-        )
-        with st.expander(f"How {spec['name']} works"):
-            spec["math"]()
-            st.markdown(spec["note"])
+    # st.tabs doesn't remember which tab was active across a rerun triggered by a widget
+    # inside it (e.g. the Model Explorer dropdown below) -- it silently snaps back to the
+    # first tab. st.radio's value is unambiguous after any rerun, so use that instead.
+    view = st.radio("View", ["Overview", "Model Explorer"], horizontal=True, label_visibility="collapsed")
+    if view == "Overview":
+        render_overview_tab(state["results"], state["last_close"])
+    else:
+        render_model_explorer_tab(state["results"], state["errors"], state["close"], state["last_close"])
 
 
 if __name__ == "__main__":
