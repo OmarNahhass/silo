@@ -26,14 +26,14 @@ st.set_page_config(page_title="CryptoCast", page_icon="📈", layout="wide")
 
 GLOBAL_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
 
 html, body, [class*="css"] {
-    font-family: 'Public Sans', sans-serif !important;
+    font-family: 'DM Sans', sans-serif !important;
 }
 [data-testid="stMetric"] {
-    background-color: #0b0b25;
-    border: 1px solid rgba(255,255,255,0.08);
+    background-color: #252836;
+    border: 1px solid hsla(236, 7%, 54%, 0.24);
     border-radius: 10px;
     padding: 16px 16px 12px 16px;
 }
@@ -205,8 +205,8 @@ def render_metric_tile(col, spec, result, last_close):
     col.caption(f"Holdout RMSE: ${rmse_val:.2f}" if rmse_val == rmse_val else "Holdout RMSE: n/a")
 
 
-def render_sidebar():
-    """Ticker/asset-type/period controls, shown on every page.
+def render_ticker_and_run_controls(asset_type: str):
+    """Sidebar ticker/period/run controls for one fixed asset type (Stock or Crypto page).
 
     st.navigation resets widget-keyed session_state when switching pages, even when the
     same widget key is reused on the destination page -- so relying on `key=` alone would
@@ -217,19 +217,13 @@ def render_sidebar():
     still prefers live in-page widget interaction over the seeded default.
     """
     prior = st.session_state.get("forecast", {})
-    asset_options = ["Stock", "Crypto"]
+    same_asset = prior.get("asset_type") == asset_type
 
     with st.sidebar:
-        st.header("Settings")
-
-        asset_type = st.segmented_control(
-            "Asset type", asset_options, default=prior.get("asset_type", "Stock"), key="asset_type",
-        )
-        if asset_type is None:  # segmented_control deselects if its active pill is clicked again
-            asset_type = prior.get("asset_type", "Stock")
+        st.header(f"{asset_type} Settings")
 
         curated = STOCK_TICKERS if asset_type == "Stock" else CRYPTO_TICKERS
-        prior_ticker = prior.get("ticker", "") if prior.get("asset_type") == asset_type else ""
+        prior_ticker = prior.get("ticker", "") if same_asset else ""
         options = ([prior_ticker] if prior_ticker and prior_ticker not in curated else []) + curated + ["Custom ticker..."]
         default_ticker = prior_ticker if prior_ticker in options else options[0]
         selected = st.selectbox(
@@ -244,11 +238,11 @@ def render_sidebar():
         else:
             ticker = selected
 
+        period_default = prior.get("period", PERIOD_OPTIONS[2]) if same_asset else PERIOD_OPTIONS[2]
         period = st.selectbox(
-            "History length", PERIOD_OPTIONS,
-            index=PERIOD_OPTIONS.index(prior.get("period", PERIOD_OPTIONS[2])), key="period",
+            "History length", PERIOD_OPTIONS, index=PERIOD_OPTIONS.index(period_default), key="period",
         )
-        run = st.button("Run Forecast", type="primary", use_container_width=True, key="run_button")
+        run = st.button("Run Forecast", type="primary", use_container_width=True, key=f"{asset_type}_run_button")
 
     # st.button only returns True on the exact rerun it was clicked on -- navigating to a
     # different page, or any other widget interaction, triggers its own rerun where `run`
@@ -289,13 +283,12 @@ def render_sidebar():
     }
 
 
-def render_overview_page():
-    render_sidebar()
+def render_dashboard_page():
     st.title("CryptoCast")
     st.caption("Forecasting stocks and crypto with classical statistics and machine learning.")
 
     if "forecast" not in st.session_state:
-        st.info("Choose an asset type and ticker in the sidebar, then click **Run Forecast**.")
+        st.info("Pick **Stock** or **Crypto** in the sidebar to search a ticker and run a forecast.")
         return
 
     state = st.session_state.forecast
@@ -311,7 +304,7 @@ def render_overview_page():
         st.dataframe(state["data"], use_container_width=True)
 
     st.subheader("Forecasts")
-    st.caption("Each model has its own page in the sidebar with its full chart and math.")
+    st.caption(f"Go to **{state['asset_type']}** in the sidebar to pick one model's full chart and math.")
     for category in (STATISTICAL, MACHINE_LEARNING):
         cat_specs = [spec for spec in MODELS if spec["category"] == category]
         st.markdown(f"##### {category} Models")
@@ -341,24 +334,60 @@ def render_overview_page():
     )
 
 
-def make_model_page(spec):
-    """Build a dedicated page-render function for one model (used with st.Page)."""
+def make_asset_page(asset_type: str):
+    """Build the Stock or Crypto page: ticker/run controls, then a model dropdown."""
 
     def render():
-        render_sidebar()
-        st.title(spec["name"])
+        render_ticker_and_run_controls(asset_type)
+        st.title(f"{asset_type} Forecasts")
+
+        state = st.session_state.get("forecast")
+        if not state or state.get("asset_type") != asset_type:
+            st.info(f"Search a {asset_type.lower()} ticker in the sidebar, then click **Run Forecast**.")
+            return
+
+        results, errors = state["results"], state["errors"]
+
+        st.subheader(f"{state['ticker']} — {len(state['data'])} trading days")
+        st.plotly_chart(
+            plot_price_history(state["data"], state["ticker"]),
+            config=PLOTLY_CONFIG, use_container_width=True,
+        )
+        with st.expander("Raw data"):
+            st.dataframe(state["data"], use_container_width=True)
+
+        st.subheader("Select a forecasting model")
+        sort_by_accuracy = st.checkbox(
+            "Sort by most accurate (lowest holdout RMSE first)", key=f"{asset_type}_sort_toggle",
+        )
+
+        def rmse_of(spec):
+            result = results.get(spec["key"])
+            return result["rmse"] if result and result["rmse"] == result["rmse"] else float("inf")
+
+        ordered = sorted(MODELS, key=rmse_of) if sort_by_accuracy else MODELS
+
+        def label(spec):
+            result = results.get(spec["key"])
+            if result is None:
+                return f"{spec['name']} (failed)"
+            if result["rmse"] == result["rmse"]:
+                return f"{spec['name']} — RMSE ${result['rmse']:.2f}"
+            return spec["name"]
+
+        selected_key = st.selectbox(
+            "Forecasting model", [spec["key"] for spec in ordered],
+            format_func=lambda key: label(next(s for s in MODELS if s["key"] == key)),
+            key=f"{asset_type}_model_select",
+        )
+        spec = next(s for s in MODELS if s["key"] == selected_key)
+
+        if spec["key"] not in results:
+            st.error(f"{spec['name']} failed to run: {errors.get(spec['key'])}")
+            return
+
+        result = results[spec["key"]]
         st.caption(spec["category"])
-
-        if "forecast" not in st.session_state:
-            st.info("Choose an asset type and ticker in the sidebar, then click **Run Forecast**.")
-            return
-
-        state = st.session_state.forecast
-        if spec["key"] not in state["results"]:
-            st.error(f"{spec['name']} failed to run: {state['errors'].get(spec['key'])}")
-            return
-
-        result = state["results"][spec["key"]]
         render_metric_tile(st, spec, result, state["last_close"])
         st.plotly_chart(
             plot_prediction(state["close"], result["fitted"], result["prediction"], spec["name"]),
@@ -368,24 +397,18 @@ def make_model_page(spec):
         spec["math"]()
         st.markdown(spec["note"])
 
-    render.__name__ = f"render_{spec['key']}_page"
+    render.__name__ = f"render_{asset_type.lower()}_page"
     return render
 
 
 def run_app():
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
-    pages = {
-        "": [st.Page(render_overview_page, title="Overview", icon="🏠", default=True)],
-        "Statistical Models": [
-            st.Page(make_model_page(spec), title=spec["name"])
-            for spec in MODELS if spec["category"] == STATISTICAL
-        ],
-        "Machine Learning Models": [
-            st.Page(make_model_page(spec), title=spec["name"])
-            for spec in MODELS if spec["category"] == MACHINE_LEARNING
-        ],
-    }
+    pages = [
+        st.Page(render_dashboard_page, title="Overview", icon="🏠", default=True),
+        st.Page(make_asset_page("Stock"), title="Stock", icon="📈"),
+        st.Page(make_asset_page("Crypto"), title="Crypto", icon="🪙"),
+    ]
     st.navigation(pages).run()
 
 

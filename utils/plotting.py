@@ -1,14 +1,14 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# Palette (dark-surface steps -- see dataviz skill reference palette; the app now runs a
-# permanent dark theme, so these are the dark variants for contrast against a near-black surface)
-BLUE = "#3987e5"      # historical series
-ORANGE = "#d95926"    # model fit (in-sample)
-VIOLET = "#9085e9"    # forecast callout
-GOOD = "#0ca30c"      # up day
-CRITICAL = "#e66767"  # down day
-MUTED = "#898781"
+# Palette, pulled from hdtoday.tr's dark-mode theme tokens (--default-color, --primary,
+# --success, --warning, --danger) so the charts match the app chrome.
+BLUE = "#4784ff"      # historical series (site's --default-color / primary accent)
+ORANGE = "#fb6340"    # model fit (in-sample)          (site's --warning)
+VIOLET = "#9d4bff"    # forecast callout               (site's --primary)
+GOOD = "#2dce89"      # up day                         (site's --success)
+CRITICAL = "#f5365c"  # down day                       (site's --danger)
+MUTED = "#808191"     # (site's --sypnosis-color)
 
 # Pass to every st.plotly_chart(..., config=PLOTLY_CONFIG) call: zoom with the scroll
 # wheel instead of the click-drag box-zoom tool (dragmode="pan" below makes click-drag
