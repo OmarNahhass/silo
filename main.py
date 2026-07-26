@@ -20,17 +20,22 @@ from models.random_forest import perform_random_forest_prediction
 from models.gradient_boosting import perform_gradient_boosting_prediction
 from models.svr import perform_svr_prediction, EPSILON as SVR_EPSILON
 from utils.plotting import plot_price_history, plot_prediction, PLOTLY_CONFIG
+from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
 
 st.set_page_config(page_title="CryptoCast", page_icon="📈", layout="wide")
 
-CARD_CSS = """
+GLOBAL_CSS = """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Public Sans', sans-serif !important;
+}
 [data-testid="stMetric"] {
-    background-color: #ffffff;
-    border: 1px solid rgba(11,11,11,0.10);
+    background-color: #0b0b25;
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 10px;
     padding: 16px 16px 12px 16px;
-    box-shadow: 0 1px 2px rgba(11,11,11,0.04);
 }
 [data-testid="stMetricLabel"] {
     font-weight: 600;
@@ -212,18 +217,33 @@ def render_sidebar():
     still prefers live in-page widget interaction over the seeded default.
     """
     prior = st.session_state.get("forecast", {})
+    asset_options = ["Stock", "Crypto"]
 
     with st.sidebar:
         st.header("Settings")
-        asset_options = ["Stock", "Crypto"]
-        asset_type = st.radio(
-            "Asset type", asset_options, horizontal=True,
-            index=asset_options.index(prior.get("asset_type", "Stock")), key="asset_type",
+
+        asset_type = st.segmented_control(
+            "Asset type", asset_options, default=prior.get("asset_type", "Stock"), key="asset_type",
         )
-        placeholder = "AAPL" if asset_type == "Stock" else "BTC"
-        ticker = st.text_input(
-            "Ticker symbol", value=prior.get("ticker", ""), placeholder=placeholder, key="ticker_input",
-        ).strip().upper()
+        if asset_type is None:  # segmented_control deselects if its active pill is clicked again
+            asset_type = prior.get("asset_type", "Stock")
+
+        curated = STOCK_TICKERS if asset_type == "Stock" else CRYPTO_TICKERS
+        prior_ticker = prior.get("ticker", "") if prior.get("asset_type") == asset_type else ""
+        options = ([prior_ticker] if prior_ticker and prior_ticker not in curated else []) + curated + ["Custom ticker..."]
+        default_ticker = prior_ticker if prior_ticker in options else options[0]
+        selected = st.selectbox(
+            "Search ticker symbol", options, index=options.index(default_ticker),
+            key=f"{asset_type}_ticker_select",
+        )
+        if selected == "Custom ticker...":
+            ticker = st.text_input(
+                "Ticker symbol", placeholder="e.g. UBER" if asset_type == "Stock" else "e.g. PEPE",
+                key=f"{asset_type}_custom_ticker",
+            ).strip().upper()
+        else:
+            ticker = selected
+
         period = st.selectbox(
             "History length", PERIOD_OPTIONS,
             index=PERIOD_OPTIONS.index(prior.get("period", PERIOD_OPTIONS[2])), key="period",
@@ -353,7 +373,7 @@ def make_model_page(spec):
 
 
 def run_app():
-    st.markdown(CARD_CSS, unsafe_allow_html=True)
+    st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
     pages = {
         "": [st.Page(render_overview_page, title="Overview", icon="🏠", default=True)],
