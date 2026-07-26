@@ -9,6 +9,15 @@ GOOD = "#0ca30c"      # up day
 CRITICAL = "#d03b3b"  # down day
 MUTED = "#898781"
 
+# Pass to every st.plotly_chart(..., config=PLOTLY_CONFIG) call: zoom with the scroll
+# wheel instead of the click-drag box-zoom tool (dragmode="pan" below makes click-drag
+# pan instead), and drop the now-redundant zoom/select buttons from the mode bar.
+PLOTLY_CONFIG = {
+    "scrollZoom": True,
+    "displaylogo": False,
+    "modeBarButtonsToRemove": ["zoom2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "lasso2d", "select2d"],
+}
+
 
 def plot_price_history(df, ticker: str):
     """Candlestick price chart with a volume panel underneath (shared x-axis, no dual y-axis)."""
@@ -37,6 +46,7 @@ def plot_price_history(df, ticker: str):
     fig.update_layout(
         title=f"{ticker} Price History",
         xaxis_rangeslider_visible=False,
+        dragmode="pan",
         hovermode="x unified",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=10, r=10, t=50, b=10),
@@ -70,6 +80,7 @@ def plot_prediction(close: "pd.Series", fitted: "pd.Series", predicted_value: fl
 
     fig.update_layout(
         title=f"{model_name}: Actual vs. Fitted vs. Forecast",
+        dragmode="pan",
         hovermode="x unified",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=10, r=10, t=50, b=10),

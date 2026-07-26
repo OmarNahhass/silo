@@ -19,7 +19,7 @@ from models.knn import perform_knn_prediction, N_NEIGHBORS
 from models.random_forest import perform_random_forest_prediction
 from models.gradient_boosting import perform_gradient_boosting_prediction
 from models.svr import perform_svr_prediction, EPSILON as SVR_EPSILON
-from utils.plotting import plot_price_history, plot_prediction
+from utils.plotting import plot_price_history, plot_prediction, PLOTLY_CONFIG
 
 st.set_page_config(page_title="CryptoCast", page_icon="📈", layout="wide")
 
@@ -200,7 +200,98 @@ def render_metric_tile(col, spec, result, last_close):
     col.caption(f"Holdout RMSE: ${rmse_val:.2f}" if rmse_val == rmse_val else "Holdout RMSE: n/a")
 
 
-def render_overview_tab(results, last_close):
+def render_sidebar():
+    """Ticker/asset-type/period controls, shown on every page.
+
+    st.navigation resets widget-keyed session_state when switching pages, even when the
+    same widget key is reused on the destination page -- so relying on `key=` alone would
+    make the sidebar visually snap back to its defaults every time you navigate, even
+    though the underlying forecast (a plain, non-widget session_state entry) is still
+    intact. Seeding each widget's initial value/index from the last *submitted* settings
+    works around that: it only resets on navigation, not on every rerun, since Streamlit
+    still prefers live in-page widget interaction over the seeded default.
+    """
+    prior = st.session_state.get("forecast", {})
+
+    with st.sidebar:
+        st.header("Settings")
+        asset_options = ["Stock", "Crypto"]
+        asset_type = st.radio(
+            "Asset type", asset_options, horizontal=True,
+            index=asset_options.index(prior.get("asset_type", "Stock")), key="asset_type",
+        )
+        placeholder = "AAPL" if asset_type == "Stock" else "BTC"
+        ticker = st.text_input(
+            "Ticker symbol", value=prior.get("ticker", ""), placeholder=placeholder, key="ticker_input",
+        ).strip().upper()
+        period = st.selectbox(
+            "History length", PERIOD_OPTIONS,
+            index=PERIOD_OPTIONS.index(prior.get("period", PERIOD_OPTIONS[2])), key="period",
+        )
+        run = st.button("Run Forecast", type="primary", use_container_width=True, key="run_button")
+
+    # st.button only returns True on the exact rerun it was clicked on -- navigating to a
+    # different page, or any other widget interaction, triggers its own rerun where `run`
+    # goes back to False. Cache the computed forecast in session_state so it survives
+    # navigation instead of every page needing a fresh click of "Run Forecast".
+    if not run:
+        return
+
+    if not ticker:
+        st.error("Enter a ticker symbol first.")
+        return
+
+    try:
+        with st.spinner(f"Fetching {ticker} data..."):
+            data = fetch_data(ticker, asset_type=asset_type, period=period)
+    except Exception as e:
+        st.error(f"Couldn't fetch data for {ticker}: {e}")
+        return
+
+    close = data["Close"].dropna()
+    results, errors = {}, {}
+    with st.spinner("Running forecasts..."):
+        for spec in MODELS:
+            try:
+                results[spec["key"]] = spec["run"](data)
+            except Exception as e:
+                errors[spec["key"]] = str(e)
+
+    st.session_state.forecast = {
+        "ticker": ticker,
+        "asset_type": asset_type,
+        "period": period,
+        "data": data,
+        "close": close,
+        "last_close": float(close.iloc[-1]),
+        "results": results,
+        "errors": errors,
+    }
+
+
+def render_overview_page():
+    render_sidebar()
+    st.title("CryptoCast")
+    st.caption("Forecasting stocks and crypto with classical statistics and machine learning.")
+
+    if "forecast" not in st.session_state:
+        st.info("Choose an asset type and ticker in the sidebar, then click **Run Forecast**.")
+        return
+
+    state = st.session_state.forecast
+    results, last_close = state["results"], state["last_close"]
+
+    st.subheader(f"{state['ticker']} — {len(state['data'])} trading days")
+    st.plotly_chart(
+        plot_price_history(state["data"], state["ticker"]),
+        config=PLOTLY_CONFIG, use_container_width=True,
+    )
+
+    with st.expander("Raw data"):
+        st.dataframe(state["data"], use_container_width=True)
+
+    st.subheader("Forecasts")
+    st.caption("Each model has its own page in the sidebar with its full chart and math.")
     for category in (STATISTICAL, MACHINE_LEARNING):
         cat_specs = [spec for spec in MODELS if spec["category"] == category]
         st.markdown(f"##### {category} Models")
@@ -230,93 +321,53 @@ def render_overview_tab(results, last_close):
     )
 
 
-def render_model_explorer_tab(results, errors, close, last_close):
-    selected_name = st.selectbox("Choose a model to inspect", [spec["name"] for spec in MODELS])
-    spec = next(s for s in MODELS if s["name"] == selected_name)
+def make_model_page(spec):
+    """Build a dedicated page-render function for one model (used with st.Page)."""
 
-    if spec["key"] not in results:
-        st.error(f"{spec['name']} failed to run: {errors.get(spec['key'])}")
-        return
+    def render():
+        render_sidebar()
+        st.title(spec["name"])
+        st.caption(spec["category"])
 
-    result = results[spec["key"]]
-    st.caption(spec["category"])
-    render_metric_tile(st, spec, result, last_close)
-    st.plotly_chart(
-        plot_prediction(close, result["fitted"], result["prediction"], spec["name"]),
-        use_container_width=True,
-    )
-    st.markdown("##### How it works")
-    spec["math"]()
-    st.markdown(spec["note"])
+        if "forecast" not in st.session_state:
+            st.info("Choose an asset type and ticker in the sidebar, then click **Run Forecast**.")
+            return
+
+        state = st.session_state.forecast
+        if spec["key"] not in state["results"]:
+            st.error(f"{spec['name']} failed to run: {state['errors'].get(spec['key'])}")
+            return
+
+        result = state["results"][spec["key"]]
+        render_metric_tile(st, spec, result, state["last_close"])
+        st.plotly_chart(
+            plot_prediction(state["close"], result["fitted"], result["prediction"], spec["name"]),
+            config=PLOTLY_CONFIG, use_container_width=True,
+        )
+        st.markdown("##### How it works")
+        spec["math"]()
+        st.markdown(spec["note"])
+
+    render.__name__ = f"render_{spec['key']}_page"
+    return render
 
 
-def main():
+def run_app():
     st.markdown(CARD_CSS, unsafe_allow_html=True)
-    st.title("CryptoCast")
-    st.caption("Forecasting stocks and crypto with classical statistics and machine learning.")
 
-    with st.sidebar:
-        st.header("Settings")
-        asset_type = st.radio("Asset type", ["Stock", "Crypto"], horizontal=True)
-        placeholder = "AAPL" if asset_type == "Stock" else "BTC"
-        ticker = st.text_input("Ticker symbol", placeholder=placeholder).strip().upper()
-        period = st.selectbox("History length", PERIOD_OPTIONS, index=2)
-        run = st.button("Run Forecast", type="primary", use_container_width=True)
-
-    # st.button only returns True on the exact rerun it was clicked on -- any later widget
-    # interaction (e.g. the Model Explorer dropdown below) triggers its own rerun where `run`
-    # goes back to False. Cache the computed forecast in session_state so it survives those
-    # reruns instead of the whole page collapsing back to the "not run yet" state.
-    if run:
-        if not ticker:
-            st.error("Enter a ticker symbol first.")
-        else:
-            try:
-                with st.spinner(f"Fetching {ticker} data..."):
-                    data = fetch_data(ticker, asset_type=asset_type, period=period)
-            except Exception as e:
-                st.error(f"Couldn't fetch data for {ticker}: {e}")
-                data = None
-
-            if data is not None:
-                close = data["Close"].dropna()
-                results, errors = {}, {}
-                with st.spinner("Running forecasts..."):
-                    for spec in MODELS:
-                        try:
-                            results[spec["key"]] = spec["run"](data)
-                        except Exception as e:
-                            errors[spec["key"]] = str(e)
-                st.session_state.forecast = {
-                    "ticker": ticker,
-                    "data": data,
-                    "close": close,
-                    "last_close": float(close.iloc[-1]),
-                    "results": results,
-                    "errors": errors,
-                }
-
-    if "forecast" not in st.session_state:
-        st.info("Choose an asset type and ticker in the sidebar, then click **Run Forecast**.")
-        return
-
-    state = st.session_state.forecast
-    st.subheader(f"{state['ticker']} — {len(state['data'])} trading days")
-    st.plotly_chart(plot_price_history(state["data"], state["ticker"]), use_container_width=True)
-
-    with st.expander("Raw data"):
-        st.dataframe(state["data"], use_container_width=True)
-
-    st.subheader("Forecasts")
-    # st.tabs doesn't remember which tab was active across a rerun triggered by a widget
-    # inside it (e.g. the Model Explorer dropdown below) -- it silently snaps back to the
-    # first tab. st.radio's value is unambiguous after any rerun, so use that instead.
-    view = st.radio("View", ["Overview", "Model Explorer"], horizontal=True, label_visibility="collapsed")
-    if view == "Overview":
-        render_overview_tab(state["results"], state["last_close"])
-    else:
-        render_model_explorer_tab(state["results"], state["errors"], state["close"], state["last_close"])
+    pages = {
+        "": [st.Page(render_overview_page, title="Overview", icon="🏠", default=True)],
+        "Statistical Models": [
+            st.Page(make_model_page(spec), title=spec["name"])
+            for spec in MODELS if spec["category"] == STATISTICAL
+        ],
+        "Machine Learning Models": [
+            st.Page(make_model_page(spec), title=spec["name"])
+            for spec in MODELS if spec["category"] == MACHINE_LEARNING
+        ],
+    }
+    st.navigation(pages).run()
 
 
 if __name__ == "__main__":
-    main()
+    run_app()
