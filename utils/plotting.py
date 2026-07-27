@@ -1,14 +1,16 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# Palette, pulled from hdtoday.tr's dark-mode theme tokens (--default-color, --primary,
-# --success, --warning, --danger) so the charts match the app chrome.
-BLUE = "#4784ff"      # historical series (site's --default-color / primary accent)
-ORANGE = "#fb6340"    # model fit (in-sample)          (site's --warning)
-VIOLET = "#9d4bff"    # forecast callout               (site's --primary)
-GOOD = "#2dce89"      # up day                         (site's --success)
-CRITICAL = "#f5365c"  # down day                       (site's --danger)
-MUTED = "#808191"     # (site's --sypnosis-color)
+# Dark-gray + orange palette. Actual close stays a neutral light gray (the "ground truth"
+# line); orange is the app's one accent color, used for the model's fitted view; amber
+# separates the forecast callout from the fit line without leaving the warm family.
+# Up/down day coloring keeps the standard green/red financial convention.
+BLUE = "#d4d4d4"      # historical series (neutral light gray)
+ORANGE = "#f97316"    # model fit (in-sample)     -- the app's primary accent
+VIOLET = "#fbbf24"    # forecast callout          -- amber, distinct from the fit line
+GOOD = "#22c55e"      # up day
+CRITICAL = "#ef4444"  # down day
+MUTED = "#9ca3af"
 
 # Pass to every st.plotly_chart(..., config=PLOTLY_CONFIG) call: zoom with the scroll
 # wheel instead of the click-drag box-zoom tool (dragmode="pan" below makes click-drag

@@ -22,18 +22,31 @@ from models.svr import perform_svr_prediction, EPSILON as SVR_EPSILON
 from utils.plotting import plot_price_history, plot_prediction, PLOTLY_CONFIG
 from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
 
-st.set_page_config(page_title="CryptoCast", page_icon="📈", layout="wide")
+st.set_page_config(page_title="CryptoCast", layout="wide")
 
+# Font stack and text sizing pulled from fightledger.vercel.app (system-ui stack, bold
+# 16px/-0.3px brand text, 22px/-0.4px h1, 14px/600 nav links, 13px muted captions).
 GLOBAL_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
-
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+h1 {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.4px !important;
+}
+h2, h3 {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+}
+[data-testid="stSidebarNavLink"] p {
+    font-size: 14px;
+    font-weight: 600;
 }
 [data-testid="stMetric"] {
-    background-color: #252836;
-    border: 1px solid hsla(236, 7%, 54%, 0.24);
+    background-color: #262626;
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 10px;
     padding: 16px 16px 12px 16px;
 }
@@ -191,9 +204,6 @@ MODELS = [
     },
 ]
 
-MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
-
-
 def render_metric_tile(col, spec, result, last_close):
     delta = result["prediction"] - last_close
     col.metric(
@@ -284,7 +294,6 @@ def render_ticker_and_run_controls(asset_type: str):
 
 
 def render_dashboard_page():
-    st.title("CryptoCast")
     st.caption("Forecasting stocks and crypto with classical statistics and machine learning.")
 
     if "forecast" not in st.session_state:
@@ -326,7 +335,7 @@ def render_dashboard_page():
         for spec in MODELS if spec["key"] in results
     ]).sort_values("Holdout RMSE", na_position="last").reset_index(drop=True)
     leaderboard.index += 1
-    leaderboard.insert(0, "Rank", [MEDALS.get(i, str(i)) for i in leaderboard.index])
+    leaderboard.insert(0, "Rank", leaderboard.index)
     st.dataframe(
         leaderboard.style.format({"Prediction": "${:.2f}", "Holdout RMSE": "${:.2f}"}),
         use_container_width=True,
@@ -403,11 +412,12 @@ def make_asset_page(asset_type: str):
 
 def run_app():
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+    st.logo("assets/logo.svg", size="large")
 
     pages = [
-        st.Page(render_dashboard_page, title="Overview", icon="🏠", default=True),
-        st.Page(make_asset_page("Stock"), title="Stock", icon="📈"),
-        st.Page(make_asset_page("Crypto"), title="Crypto", icon="🪙"),
+        st.Page(render_dashboard_page, title="Overview", icon=":material/dashboard:", default=True),
+        st.Page(make_asset_page("Stock"), title="Stock", icon=":material/show_chart:"),
+        st.Page(make_asset_page("Crypto"), title="Crypto", icon=":material/currency_bitcoin:"),
     ]
     st.navigation(pages).run()
 
