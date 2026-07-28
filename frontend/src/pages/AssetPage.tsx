@@ -4,6 +4,7 @@ import { useForecast } from "../context/ForecastContext";
 import type { AssetType, ModelMeta } from "../types";
 import PriceChart from "../components/PriceChart";
 import ModelDetail from "../components/ModelDetail";
+import SearchableSelect from "../components/SearchableSelect";
 
 const PERIOD_OPTIONS = ["6mo", "1y", "2y", "5y", "max"];
 
@@ -75,13 +76,12 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
         <h3>{assetType} Settings</h3>
         <label>
           Search ticker symbol
-          <select value={ticker} onChange={(e) => setTicker(e.target.value)}>
-            {tickers.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            options={tickers.map((t) => ({ value: t, label: t }))}
+            value={ticker}
+            onChange={setTicker}
+            placeholder={`Search ${assetType.toLowerCase()} tickers...`}
+          />
         </label>
         <label>
           History length
@@ -125,14 +125,17 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
             </label>
             <label>
               Forecasting model
-              <select value={selectedKey} onChange={(e) => setSelectedKey(e.target.value)}>
-                {orderedModels.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.name}
-                    {m.rmse !== null ? ` — RMSE $${m.rmse.toFixed(2)}` : m.error ? " (failed)" : ""}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                options={orderedModels.map((m) => ({
+                  value: m.key,
+                  label:
+                    m.name +
+                    (m.rmse !== null ? ` — RMSE $${m.rmse.toFixed(2)}` : m.error ? " (failed)" : ""),
+                }))}
+                value={selectedKey}
+                onChange={setSelectedKey}
+                placeholder="Search models..."
+              />
             </label>
 
             {selectedResult && (

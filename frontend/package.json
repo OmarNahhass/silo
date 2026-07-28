@@ -16,7 +16,8 @@
     "react-dom": "^19.2.7",
     "react-katex": "^3.1.0",
     "react-plotly.js": "^4.0.0",
-    "react-router-dom": "^7.18.1"
+    "react-router-dom": "^7.18.1",
+    "react-select": "^5.10.2"
   },
   "devDependencies": {
     "@types/katex": "^0.16.8",
