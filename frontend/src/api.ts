@@ -1,4 +1,4 @@
-import type { AssetType, ForecastResponse, ModelMeta } from "./types";
+import type { AssetType, ForecastResponse, LiveForecast, ModelMeta } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -30,4 +30,10 @@ export function postForecast(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ticker, asset_type: assetType, period }),
   }).then((r) => handle<ForecastResponse>(r));
+}
+
+export function getLiveForecast(assetType: AssetType, ticker: string): Promise<LiveForecast> {
+  return fetch(`${API_BASE}/api/live/${assetType.toLowerCase()}/${ticker}`).then((r) =>
+    handle<LiveForecast>(r),
+  );
 }

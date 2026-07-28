@@ -4,6 +4,7 @@ const links = [
   { to: "/", label: "Overview" },
   { to: "/stock", label: "Stock" },
   { to: "/crypto", label: "Crypto" },
+  { to: "/live", label: "Live" },
 ];
 
 export default function Sidebar() {

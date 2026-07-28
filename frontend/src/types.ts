@@ -41,3 +41,26 @@ export interface ForecastResponse {
   price_history: PriceBar[];
   models: ModelResult[];
 }
+
+export interface LiveBar {
+  time: string;
+  price: number;
+}
+
+export interface LiveHistoryRow {
+  trade_date: string;
+  predicted_close: number;
+  actual_close: number | null;
+}
+
+export interface LiveForecast {
+  ticker: string;
+  asset_type: AssetType;
+  trade_date: string;
+  open_price: number;
+  current_price: number;
+  predicted_close: number | null;
+  error: string | null;
+  intraday_bars: LiveBar[];
+  history: LiveHistoryRow[];
+}

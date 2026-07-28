@@ -27,3 +27,19 @@ def fetch_data(ticker: str, asset_type: str = "Stock", period: str = "2y"):
 
     data.index.name = "Date"
     return data
+
+
+def fetch_intraday(ticker: str, asset_type: str = "Stock", period: str = "1d", interval: str = "5m"):
+    """Fetch intraday OHLCV bars (tz-aware index: exchange tz for stocks, UTC for crypto)."""
+    symbol = _resolve_symbol(ticker, asset_type)
+
+    data = yf.download(symbol, period=period, interval=interval, progress=False, auto_adjust=True)
+
+    if data.empty:
+        raise ValueError(f"No intraday data found for '{symbol}'.")
+
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+
+    data.index.name = "Datetime"
+    return data

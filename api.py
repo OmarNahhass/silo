@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from data_fetcher import fetch_data, PERIOD_OPTIONS
 from model_registry import MODELS
 from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
+import live_forecast
 
 app = FastAPI(title="CryptoCast API")
 
@@ -26,6 +27,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+live_forecast.init_db()
 
 
 def _clean_float(value):
@@ -121,3 +124,18 @@ def post_forecast(req: ForecastRequest):
         "price_history": price_history,
         "models": model_results,
     }
+
+
+@app.get("/api/live/{asset_type}/{ticker}")
+def get_live(asset_type: str, ticker: str):
+    if asset_type.lower() not in ("stock", "crypto"):
+        raise HTTPException(status_code=400, detail="asset_type must be 'stock' or 'crypto'")
+    asset_type = "Stock" if asset_type.lower() == "stock" else "Crypto"
+
+    if not ticker.strip():
+        raise HTTPException(status_code=400, detail="Ticker is required.")
+
+    try:
+        return live_forecast.get_live_forecast(ticker, asset_type)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Couldn't fetch live data for {ticker}: {e}")
