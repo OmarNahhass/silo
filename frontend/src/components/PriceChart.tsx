@@ -37,6 +37,8 @@ export default function PriceChart({ ticker, bars }: { ticker: string; bars: Pri
       layout={{
         ...PLOTLY_LAYOUT_BASE,
         title: { text: `${ticker} Price History` },
+        margin: { ...PLOTLY_LAYOUT_BASE.margin, b: 70 },
+        legend: { ...PLOTLY_LAYOUT_BASE.legend, y: -0.12 },
         grid: { rows: 2, columns: 1, subplots: [["xy"], ["x2y2"]], roworder: "top to bottom" },
         xaxis: { rangeslider: { visible: false }, domain: [0, 1], anchor: "y" },
         xaxis2: { domain: [0, 1], anchor: "y2" },
