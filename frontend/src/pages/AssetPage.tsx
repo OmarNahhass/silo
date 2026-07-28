@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { getTickers, getModels, postForecast } from "../api";
 import { useForecast } from "../context/ForecastContext";
-import type { AssetType, ModelMeta } from "../types";
+import type { AssetType, ModelMeta, ModelResult } from "../types";
 import PriceChart from "../components/PriceChart";
 import ModelDetail from "../components/ModelDetail";
 import SearchableSelect from "../components/SearchableSelect";
 
 const PERIOD_OPTIONS = ["6mo", "1y", "2y", "5y", "max"];
+
+function mostAccurate(models: ModelResult[]): ModelResult | undefined {
+  return [...models]
+    .filter((m) => m.error === null && m.rmse !== null)
+    .sort((a, b) => (a.rmse as number) - (b.rmse as number))[0];
+}
 
 export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const { forecast, setForecast } = useForecast();
@@ -16,10 +22,13 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const [period, setPeriod] = useState(PERIOD_OPTIONS[2]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Settings panel starts open; once a forecast has run, it collapses so the
+  // dashboard gets the full width. "Change ticker" brings it back.
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   const [models, setModels] = useState<ModelMeta[]>([]);
   const [selectedKey, setSelectedKey] = useState<string>("");
-  const [sortByAccuracy, setSortByAccuracy] = useState(false);
+  const [sortByAccuracy, setSortByAccuracy] = useState(true);
 
   useEffect(() => {
     getTickers(assetType).then((r) => {
@@ -36,7 +45,8 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
 
   useEffect(() => {
     if (matchingForecast && !selectedKey) {
-      setSelectedKey(matchingForecast.models[0]?.key ?? "");
+      const best = mostAccurate(matchingForecast.models);
+      setSelectedKey(best?.key ?? matchingForecast.models[0]?.key ?? "");
     }
   }, [matchingForecast, selectedKey]);
 
@@ -50,7 +60,9 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
     try {
       const result = await postForecast(ticker.trim().toUpperCase(), assetType, period);
       setForecast(result);
-      setSelectedKey(result.models[0]?.key ?? "");
+      const best = mostAccurate(result.models);
+      setSelectedKey(best?.key ?? result.models[0]?.key ?? "");
+      setSettingsOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -72,35 +84,44 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
 
   return (
     <div className="page asset-layout">
-      <aside className="asset-controls">
-        <h3>{assetType} Settings</h3>
-        <label>
-          Search ticker symbol
-          <SearchableSelect
-            options={tickers.map((t) => ({ value: t, label: t }))}
-            value={ticker}
-            onChange={setTicker}
-            placeholder={`Search ${assetType.toLowerCase()} tickers...`}
-          />
-        </label>
-        <label>
-          History length
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            {PERIOD_OPTIONS.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="run-button" onClick={handleRunForecast} disabled={loading}>
-          {loading ? "Running..." : "Run Forecast"}
-        </button>
-        {error && <p className="error-text">{error}</p>}
-      </aside>
+      {settingsOpen && (
+        <aside className="asset-controls">
+          <h3>{assetType} Settings</h3>
+          <label>
+            Search ticker symbol
+            <SearchableSelect
+              options={tickers.map((t) => ({ value: t, label: t }))}
+              value={ticker}
+              onChange={setTicker}
+              placeholder={`Search ${assetType.toLowerCase()} tickers...`}
+            />
+          </label>
+          <label>
+            History length
+            <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+              {PERIOD_OPTIONS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="run-button" onClick={handleRunForecast} disabled={loading}>
+            {loading ? "Running..." : "Run Forecast"}
+          </button>
+          {error && <p className="error-text">{error}</p>}
+        </aside>
+      )}
 
       <div className="asset-main">
-        <h2>{assetType} Forecasts</h2>
+        <div className="asset-main-header">
+          <h2>{assetType} Forecasts</h2>
+          {matchingForecast && (
+            <button className="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
+              {settingsOpen ? "Hide settings" : "Change ticker"}
+            </button>
+          )}
+        </div>
 
         {!matchingForecast ? (
           <p className="hint-banner">
@@ -112,7 +133,9 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
             <h3>
               {matchingForecast.ticker} — {matchingForecast.trading_days} trading days
             </h3>
-            <PriceChart ticker={matchingForecast.ticker} bars={matchingForecast.price_history} />
+            <div className="chart-wrap">
+              <PriceChart ticker={matchingForecast.ticker} bars={matchingForecast.price_history} />
+            </div>
 
             <h3>Select a forecasting model</h3>
             <label className="checkbox-label">
@@ -126,9 +149,10 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
             <label>
               Forecasting model
               <SearchableSelect
-                options={orderedModels.map((m) => ({
+                options={orderedModels.map((m, i) => ({
                   value: m.key,
                   label:
+                    (sortByAccuracy && m.rmse !== null ? `#${i + 1} ` : "") +
                     m.name +
                     (m.rmse !== null ? ` — RMSE $${m.rmse.toFixed(2)}` : m.error ? " (failed)" : ""),
                 }))}

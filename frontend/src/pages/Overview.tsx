@@ -17,33 +17,38 @@ export default function Overview() {
     );
   }
 
-  const categories = [...new Set(forecast.models.map((m) => m.category))];
+  // Ranked by accuracy (lowest holdout RMSE first) rather than grouped by category --
+  // the point is that anyone unfamiliar with these 10 models can tell at a glance which
+  // one to trust most for this specific ticker. Models that failed to run sort last.
+  const ranked = [...forecast.models]
+    .filter((m) => m.error === null && m.rmse !== null)
+    .sort((a, b) => (a.rmse as number) - (b.rmse as number));
+  const failed = forecast.models.filter((m) => m.error !== null || m.rmse === null);
 
   return (
     <div className="page">
       <h2>
         {forecast.ticker} — {forecast.trading_days} trading days
       </h2>
-      <PriceChart ticker={forecast.ticker} bars={forecast.price_history} />
+      <div className="chart-wrap">
+        <PriceChart ticker={forecast.ticker} bars={forecast.price_history} />
+      </div>
 
-      <h3>Forecasts</h3>
+      <h3>Forecasts — ranked by accuracy</h3>
       <p className="muted">
-        Go to <strong>{forecast.asset_type}</strong> in the sidebar to pick one model's full
-        chart and math.
+        #1 is the model with the lowest error on recent held-out data for {forecast.ticker}{" "}
+        specifically. Go to <strong>{forecast.asset_type}</strong> in the sidebar to pick one
+        model's full chart and math.
       </p>
 
-      {categories.map((category) => (
-        <div key={category}>
-          <h4>{category} Models</h4>
-          <div className="tile-grid">
-            {forecast.models
-              .filter((m) => m.category === category)
-              .map((m) => (
-                <MetricTile key={m.key} result={m} lastClose={forecast.last_close} />
-              ))}
-          </div>
-        </div>
-      ))}
+      <div className="tile-grid">
+        {ranked.map((m, i) => (
+          <MetricTile key={m.key} result={m} lastClose={forecast.last_close} rank={i + 1} />
+        ))}
+        {failed.map((m) => (
+          <MetricTile key={m.key} result={m} lastClose={forecast.last_close} />
+        ))}
+      </div>
 
       <h4>Leaderboard (ranked by holdout RMSE — lower is better)</h4>
       <Leaderboard models={forecast.models} />

@@ -3,14 +3,19 @@ import type { ModelResult } from "../types";
 export default function MetricTile({
   result,
   lastClose,
+  rank,
 }: {
   result: ModelResult;
   lastClose: number;
+  rank?: number;
 }) {
   if (result.error || result.prediction === null) {
     return (
       <div className="metric-tile metric-tile-error">
-        <div className="metric-label">{result.name}</div>
+        <div className="metric-tile-header">
+          <div className="metric-label">{result.name}</div>
+        </div>
+        <div className="metric-category">{result.category}</div>
         <div className="metric-error">Failed: {result.error ?? "no prediction"}</div>
       </div>
     );
@@ -22,7 +27,11 @@ export default function MetricTile({
 
   return (
     <div className="metric-tile">
-      <div className="metric-label">{result.name}</div>
+      <div className="metric-tile-header">
+        {rank !== undefined && <span className="rank-badge">#{rank}</span>}
+        <div className="metric-label">{result.name}</div>
+      </div>
+      <div className="metric-category">{result.category}</div>
       <div className="metric-value">${result.prediction.toFixed(2)}</div>
       <div className={"metric-delta " + (isUp ? "up" : "down")}>
         {isUp ? "↑" : "↓"} {delta >= 0 ? "+" : ""}
