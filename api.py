@@ -23,7 +23,9 @@ app = FastAPI(title="CryptoCast API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Vite's dev port drifts (5173, 5174, ...) whenever the default is already taken,
+    # so match any localhost port instead of hardcoding one.
+    allow_origin_regex=r"http://localhost:\d+",
     allow_methods=["*"],
     allow_headers=["*"],
 )
