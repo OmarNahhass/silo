@@ -1,4 +1,6 @@
 streamlit
+fastapi
+uvicorn[standard]
 yfinance>=1.0
 plotly
 scikit-learn

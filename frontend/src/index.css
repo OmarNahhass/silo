@@ -1,0 +1,251 @@
+/* Minimal baseline styling, not a full design pass -- carries over the dark-gray/orange
+   palette and system font stack from the Streamlit app for a usable starting point. */
+
+:root {
+  --bg: #1a1a1a;
+  --surface: #262626;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e5e5e5;
+  --text-muted: #9ca3af;
+  --accent: #f97316;
+  --up: #22c55e;
+  --down: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nav-link.active {
+  background: var(--surface);
+}
+
+.content {
+  flex: 1;
+  padding: 24px 32px;
+  min-width: 0;
+}
+
+.page {
+  max-width: 1100px;
+}
+
+h1, h2, h3, h4, h5 {
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.hint-banner {
+  background: #1e2a3a;
+  color: #93c5fd;
+  padding: 14px 18px;
+  border-radius: 8px;
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.metric-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.metric-tile-error {
+  border-color: var(--down);
+}
+
+.metric-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.metric-delta.up {
+  color: var(--up);
+}
+
+.metric-delta.down {
+  color: var(--down);
+}
+
+.metric-rmse {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.metric-error {
+  color: var(--down);
+  font-size: 13px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table.leaderboard {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+table.leaderboard th,
+table.leaderboard td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.asset-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.asset-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.asset-main label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 12px;
+  max-width: 320px;
+}
+
+.asset-main label select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.asset-controls {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.asset-controls label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.asset-controls select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.run-button {
+  width: 100%;
+  padding: 10px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.run-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.model-detail {
+  margin-top: 16px;
+}
+
+.how-it-works {
+  margin-top: 12px;
+}
+
+.error-text {
+  color: var(--down);
+  font-size: 13px;
+}
