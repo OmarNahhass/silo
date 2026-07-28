@@ -16,6 +16,32 @@
   box-sizing: border-box;
 }
 
+/* Firefox */
+* {
+  scrollbar-color: var(--accent) var(--bg);
+  scrollbar-width: thin;
+}
+
+/* Chrome/Edge/Safari */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 6px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fb923c;
+}
+
 body {
   margin: 0;
   background: var(--bg);
