@@ -50,6 +50,7 @@ export interface LiveBar {
 export interface LiveHistoryRow {
   trade_date: string;
   predicted_close: number;
+  naive_close: number;
   actual_close: number | null;
 }
 
@@ -63,4 +64,7 @@ export interface LiveForecast {
   error: string | null;
   intraday_bars: LiveBar[];
   history: LiveHistoryRow[];
+  model_mae: number | null;
+  naive_mae: number | null;
+  n_resolved: number;
 }

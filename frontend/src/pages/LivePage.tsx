@@ -124,29 +124,44 @@ export default function LivePage() {
               </div>
 
               <h3>Predicted vs. Actual</h3>
+
+              {live.n_resolved > 0 && live.model_mae !== null && live.naive_mae !== null && (
+                <p className={"muted"}>
+                  Over the last {live.n_resolved} resolved day{live.n_resolved === 1 ? "" : "s"}: model
+                  MAE <strong>${live.model_mae.toFixed(2)}</strong> vs. naive "no change" baseline MAE{" "}
+                  <strong>${live.naive_mae.toFixed(2)}</strong> —{" "}
+                  {live.model_mae < live.naive_mae
+                    ? `beating the baseline by $${(live.naive_mae - live.model_mae).toFixed(2)}.`
+                    : live.model_mae > live.naive_mae
+                      ? `currently worse than just assuming no more movement.`
+                      : "tied with the baseline."}
+                </p>
+              )}
+
               <div className="table-wrap">
                 <table className="leaderboard">
                   <thead>
                     <tr>
                       <th>Date</th>
-                      <th>Predicted Close</th>
+                      <th>Predicted</th>
+                      <th>Naive (No Change)</th>
                       <th>Actual Close</th>
-                      <th>Error</th>
+                      <th>Model Error</th>
+                      <th>Naive Error</th>
                     </tr>
                   </thead>
                   <tbody>
                     {live.history.map((row) => {
-                      const err = row.actual_close !== null ? row.actual_close - row.predicted_close : null;
+                      const modelErr = row.actual_close !== null ? row.actual_close - row.predicted_close : null;
+                      const naiveErr = row.actual_close !== null ? row.actual_close - row.naive_close : null;
                       return (
                         <tr key={row.trade_date}>
                           <td>{row.trade_date}</td>
                           <td>${row.predicted_close.toFixed(2)}</td>
+                          <td>${row.naive_close.toFixed(2)}</td>
                           <td>{row.actual_close !== null ? `$${row.actual_close.toFixed(2)}` : "—"}</td>
-                          <td>
-                            {err !== null
-                              ? `${err >= 0 ? "+" : ""}${err.toFixed(2)} (${((err / row.predicted_close) * 100).toFixed(2)}%)`
-                              : "—"}
-                          </td>
+                          <td>{modelErr !== null ? `${modelErr >= 0 ? "+" : ""}${modelErr.toFixed(2)}` : "—"}</td>
+                          <td>{naiveErr !== null ? `${naiveErr >= 0 ? "+" : ""}${naiveErr.toFixed(2)}` : "—"}</td>
                         </tr>
                       );
                     })}

@@ -66,14 +66,18 @@ def _upsert_prediction(conn, ticker, asset_type, trade_date, predicted_close, op
     conn.commit()
 
 
-def _backfill_actual_closes(conn, ticker, asset_type):
+def _backfill_actual_closes(conn, ticker, asset_type, today_trade_date):
+    # Compare against the ticker's own trade_date (derived from its tz-aware bar
+    # index -- ET for stocks, UTC for crypto) rather than SQLite's date('now'),
+    # which is always UTC and would treat a stock's still-current session as
+    # already "past" during the evening ET hours after UTC has rolled to the next day.
     pending = conn.execute(
         """
         SELECT trade_date FROM intraday_predictions
         WHERE ticker = ? AND asset_type = ? AND actual_close IS NULL
-          AND trade_date < date('now')
+          AND trade_date < ?
         """,
-        (ticker, asset_type),
+        (ticker, asset_type, today_trade_date),
     ).fetchall()
 
     if not pending:
@@ -117,11 +121,12 @@ def get_live_forecast(ticker: str, asset_type: str) -> dict:
     try:
         if predicted_close is not None:
             _upsert_prediction(conn, ticker, asset_type, trade_date, predicted_close, open_price, current_price)
-        _backfill_actual_closes(conn, ticker, asset_type)
+        _backfill_actual_closes(conn, ticker, asset_type, trade_date)
 
         history_rows = conn.execute(
             """
-            SELECT trade_date, predicted_close, actual_close FROM intraday_predictions
+            SELECT trade_date, predicted_close, price_at_prediction, actual_close
+            FROM intraday_predictions
             WHERE ticker = ? AND asset_type = ?
             ORDER BY trade_date DESC LIMIT 20
             """,
@@ -135,10 +140,24 @@ def get_live_forecast(ticker: str, asset_type: str) -> dict:
         for ts, row in today_bars.iterrows()
     ]
 
+    # naive_close is the "no change" baseline: whatever the price was at the moment
+    # the prediction was made, i.e. the naive forecast that the close = current price.
     history = [
-        {"trade_date": trade_date, "predicted_close": predicted, "actual_close": actual}
-        for trade_date, predicted, actual in reversed(history_rows)
+        {"trade_date": trade_date, "predicted_close": predicted, "naive_close": naive, "actual_close": actual}
+        for trade_date, predicted, naive, actual in reversed(history_rows)
     ]
+
+    resolved = [row for row in history if row["actual_close"] is not None]
+    model_mae = (
+        sum(abs(row["actual_close"] - row["predicted_close"]) for row in resolved) / len(resolved)
+        if resolved
+        else None
+    )
+    naive_mae = (
+        sum(abs(row["actual_close"] - row["naive_close"]) for row in resolved) / len(resolved)
+        if resolved
+        else None
+    )
 
     return {
         "ticker": ticker,
@@ -150,4 +169,7 @@ def get_live_forecast(ticker: str, asset_type: str) -> dict:
         "error": error,
         "intraday_bars": intraday_bars,
         "history": history,
+        "model_mae": model_mae,
+        "naive_mae": naive_mae,
+        "n_resolved": len(resolved),
     }
