@@ -1,4 +1,5 @@
 import type { ModelResult } from "../types";
+import InfoTip from "./InfoTip";
 
 export default function MetricTile({
   result,
@@ -39,7 +40,8 @@ export default function MetricTile({
         {(deltaPct * 100).toFixed(2)}%)
       </div>
       <div className="metric-rmse">
-        {result.rmse !== null ? `Holdout RMSE: $${result.rmse.toFixed(2)}` : "Holdout RMSE: n/a"}
+        {result.rmse !== null ? `Typical error: $${result.rmse.toFixed(2)}` : "Typical error: n/a"}
+        <InfoTip text="On past data the model didn't train on, its predictions were off by about this much on average. Lower is better. (Technically: RMSE, root mean squared error.)" />
       </div>
     </div>
   );

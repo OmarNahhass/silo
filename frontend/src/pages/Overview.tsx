@@ -2,6 +2,7 @@ import { useForecast } from "../context/ForecastContext";
 import PriceChart from "../components/PriceChart";
 import MetricTile from "../components/MetricTile";
 import Leaderboard from "../components/Leaderboard";
+import InfoTip from "../components/InfoTip";
 
 export default function Overview() {
   const { forecast } = useForecast();
@@ -36,9 +37,10 @@ export default function Overview() {
 
       <h3>Forecasts — ranked by accuracy</h3>
       <p className="muted">
-        #1 is the model with the lowest error on recent held-out data for {forecast.ticker}{" "}
-        specifically. Go to <strong>{forecast.asset_type}</strong> in the sidebar to pick one
-        model's full chart and math.
+        #1 is the model that was most accurate when tested against recent past data for{" "}
+        {forecast.ticker} specifically — not just guessed to be best. Go to{" "}
+        <strong>{forecast.asset_type}</strong> in the sidebar to pick one model's full chart and
+        the math behind it.
       </p>
 
       <div className="tile-grid">
@@ -50,7 +52,10 @@ export default function Overview() {
         ))}
       </div>
 
-      <h4>Leaderboard (ranked by holdout RMSE — lower is better)</h4>
+      <h4>
+        Leaderboard — most accurate first
+        <InfoTip text="Ranked by typical error (RMSE) on data each model didn't train on. Lower error means its past predictions were, on average, closer to what actually happened." />
+      </h4>
       <Leaderboard models={forecast.models} />
     </div>
   );

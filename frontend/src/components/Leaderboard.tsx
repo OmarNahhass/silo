@@ -1,4 +1,5 @@
 import type { ModelResult } from "../types";
+import InfoTip from "./InfoTip";
 
 export default function Leaderboard({ models }: { models: ModelResult[] }) {
   const ranked = models
@@ -15,7 +16,10 @@ export default function Leaderboard({ models }: { models: ModelResult[] }) {
             <th>Model</th>
             <th>Category</th>
             <th>Prediction</th>
-            <th>Holdout RMSE</th>
+            <th>
+              Typical Error
+              <InfoTip text="On past data the model didn't train on, its predictions were off by about this much on average. Lower is better. (Technically: RMSE, root mean squared error.)" />
+            </th>
           </tr>
         </thead>
         <tbody>

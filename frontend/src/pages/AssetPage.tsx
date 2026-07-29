@@ -5,6 +5,7 @@ import type { AssetType, ModelMeta, ModelResult } from "../types";
 import PriceChart from "../components/PriceChart";
 import ModelDetail from "../components/ModelDetail";
 import SearchableSelect from "../components/SearchableSelect";
+import InfoTip from "../components/InfoTip";
 
 const PERIOD_OPTIONS = ["6mo", "1y", "2y", "5y", "max"];
 
@@ -122,6 +123,10 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
             </button>
           )}
         </div>
+        <p className="muted">
+          Runs 10 different forecasting models on a ticker's price history and shows which ones
+          have actually been most accurate for it.
+        </p>
 
         {!matchingForecast ? (
           <p className="hint-banner">
@@ -137,14 +142,17 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
               <PriceChart ticker={matchingForecast.ticker} bars={matchingForecast.price_history} />
             </div>
 
-            <h3>Select a forecasting model</h3>
+            <h3>
+              Select a forecasting model
+              <InfoTip text="Each model uses a different approach to guess tomorrow's price. None are perfect -- comparing several is how you tell a lucky guess from a genuinely useful one." />
+            </h3>
             <label className="checkbox-label">
               <input
                 type="checkbox"
                 checked={sortByAccuracy}
                 onChange={(e) => setSortByAccuracy(e.target.checked)}
               />
-              Sort by most accurate (lowest holdout RMSE first)
+              Sort by accuracy (most accurate first)
             </label>
             <label>
               Forecasting model
@@ -154,7 +162,7 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
                   label:
                     (sortByAccuracy && m.rmse !== null ? `#${i + 1} ` : "") +
                     m.name +
-                    (m.rmse !== null ? ` — RMSE $${m.rmse.toFixed(2)}` : m.error ? " (failed)" : ""),
+                    (m.rmse !== null ? ` — avg error $${m.rmse.toFixed(2)}` : m.error ? " (failed)" : ""),
                 }))}
                 value={selectedKey}
                 onChange={setSelectedKey}

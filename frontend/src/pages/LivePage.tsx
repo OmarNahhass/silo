@@ -3,6 +3,7 @@ import { getTickers, getLiveForecast } from "../api";
 import type { AssetType, LiveForecast } from "../types";
 import IntradayChart from "../components/IntradayChart";
 import SearchableSelect from "../components/SearchableSelect";
+import InfoTip from "../components/InfoTip";
 
 const REFRESH_INTERVAL_MS = 60_000;
 
@@ -123,18 +124,22 @@ export default function LivePage() {
                 <IntradayChart ticker={live.ticker} bars={live.intraday_bars} />
               </div>
 
-              <h3>Predicted vs. Actual</h3>
+              <h3>
+                Predicted vs. Actual
+                <InfoTip text="Once a tracked day ends, its real closing price gets filled in here automatically, so you can see how close the prediction actually was." />
+              </h3>
 
               {live.n_resolved > 0 && live.model_mae !== null && live.naive_mae !== null && (
                 <p className={"muted"}>
-                  Over the last {live.n_resolved} resolved day{live.n_resolved === 1 ? "" : "s"}: model
-                  MAE <strong>${live.model_mae.toFixed(2)}</strong> vs. naive "no change" baseline MAE{" "}
-                  <strong>${live.naive_mae.toFixed(2)}</strong> —{" "}
+                  Over the last {live.n_resolved} resolved day{live.n_resolved === 1 ? "" : "s"}: the
+                  model was off by <strong>${live.model_mae.toFixed(2)}</strong> on average, vs.{" "}
+                  <strong>${live.naive_mae.toFixed(2)}</strong> for just assuming the price wouldn't
+                  move at all —{" "}
                   {live.model_mae < live.naive_mae
-                    ? `beating the baseline by $${(live.naive_mae - live.model_mae).toFixed(2)}.`
+                    ? `beating that baseline by $${(live.naive_mae - live.model_mae).toFixed(2)}.`
                     : live.model_mae > live.naive_mae
-                      ? `currently worse than just assuming no more movement.`
-                      : "tied with the baseline."}
+                      ? `currently worse than doing nothing.`
+                      : "tied with doing nothing."}
                 </p>
               )}
 
@@ -144,7 +149,10 @@ export default function LivePage() {
                     <tr>
                       <th>Date</th>
                       <th>Predicted</th>
-                      <th>Naive (No Change)</th>
+                      <th>
+                        Naive (No Change)
+                        <InfoTip text="The simplest possible guess: assume the price stays exactly where it was when the prediction was made. If the model can't beat this, it isn't adding any value." />
+                      </th>
                       <th>Actual Close</th>
                       <th>Model Error</th>
                       <th>Naive Error</th>
