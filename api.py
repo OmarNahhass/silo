@@ -6,9 +6,25 @@ nothing here duplicates the forecasting logic, only exposes it as JSON.
 Run with: uvicorn api:app --reload --port 8000
 """
 
+import os
+
+# Must run before numpy/statsmodels/sklearn/xgboost are imported anywhere (including
+# transitively via data_fetcher below) -- each of those libraries otherwise spins up
+# its own BLAS thread pool sized to all CPU cores. The API runs all 10 models
+# concurrently in a thread pool (see _model_executor below), and two concurrent
+# /api/forecast requests (e.g. the Compare page) run 20 of those threads at once --
+# without this cap, every one of those threads also tries to grab every core for its
+# own matrix math, and the resulting oversubscription made two concurrent forecasts
+# take ~20s instead of the ~6s they take once each thread is limited to one core.
+for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+             "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(_var, "1")
+
 import math
 import warnings
 warnings.filterwarnings("ignore")
+
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +47,12 @@ app.add_middleware(
 )
 
 live_forecast.init_db()
+
+# The 10 models are independent of each other, and the slow ones (SARIMA's iterative MLE
+# fit, Random Forest/XGBoost's tree ensembles) do their real work in C/Fortran code that
+# releases the GIL -- so running them in a thread pool gives real wall-clock speedup
+# instead of the ~10s+ you get from running all 10 one after another.
+_model_executor = ThreadPoolExecutor(max_workers=len(MODELS))
 
 
 def _clean_float(value):
@@ -81,11 +103,10 @@ def post_forecast(req: ForecastRequest):
 
     close = data["Close"].dropna()
 
-    model_results = []
-    for spec in MODELS:
+    def _run_one(spec):
         try:
             result = spec["run"](data)
-            model_results.append({
+            return {
                 "key": spec["key"],
                 "name": spec["name"],
                 "category": spec["category"],
@@ -93,9 +114,9 @@ def post_forecast(req: ForecastRequest):
                 "rmse": _clean_float(result["rmse"]),
                 "fitted": _series_to_points(result["fitted"]),
                 "error": None,
-            })
+            }
         except Exception as e:
-            model_results.append({
+            return {
                 "key": spec["key"],
                 "name": spec["name"],
                 "category": spec["category"],
@@ -103,7 +124,10 @@ def post_forecast(req: ForecastRequest):
                 "rmse": None,
                 "fitted": [],
                 "error": str(e),
-            })
+            }
+
+    # map() preserves MODELS order in the results even though execution is concurrent.
+    model_results = list(_model_executor.map(_run_one, MODELS))
 
     price_history = [
         {
