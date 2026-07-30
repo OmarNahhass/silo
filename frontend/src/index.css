@@ -342,6 +342,37 @@ table.leaderboard td {
   font-size: 13px;
 }
 
+.compare-controls {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.period-label {
+  display: block;
+  font-size: 13px;
+  max-width: 200px;
+  margin-bottom: 16px;
+}
+
+.period-label select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.compare-button {
+  width: auto;
+  padding: 10px 24px;
+  margin-bottom: 24px;
+}
+
 .info-tip {
   position: relative;
   display: inline-flex;

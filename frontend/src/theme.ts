@@ -6,6 +6,8 @@ export const COLORS = {
   forecast: "#fbbf24", // amber
   up: "#22c55e",
   down: "#ef4444",
+  compareA: "#f97316", // orange accent
+  compareB: "#38bdf8", // sky blue
 };
 
 export const PLOTLY_CONFIG = {
