@@ -55,6 +55,8 @@ body {
 }
 
 .sidebar {
+  display: flex;
+  flex-direction: column;
   width: 240px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
@@ -72,11 +74,15 @@ body {
 .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
 }
 
 .nav-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 8px 10px;
   border-radius: 8px;
   color: var(--text);
@@ -87,6 +93,20 @@ body {
 
 .nav-link.active {
   background: var(--surface);
+}
+
+.nav-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 13px;
 }
 
 .content {
@@ -224,8 +244,8 @@ table.leaderboard td {
 
 .asset-layout {
   display: flex;
+  flex-direction: column;
   gap: 24px;
-  align-items: flex-start;
 }
 
 .asset-main {
@@ -258,6 +278,7 @@ table.leaderboard td {
   padding: 16px;
   width: 280px;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .asset-controls label {

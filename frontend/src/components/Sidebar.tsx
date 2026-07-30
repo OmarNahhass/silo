@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
 
 const links = [
-  { to: "/", label: "Overview" },
-  { to: "/stock", label: "Stock" },
-  { to: "/crypto", label: "Crypto" },
-  { to: "/live", label: "Live" },
-  { to: "/compare", label: "Compare" },
+  { to: "/", label: "Overview", badge: "O" },
+  { to: "/stock", label: "Stock", badge: "S" },
+  { to: "/crypto", label: "Crypto", badge: "Cr" },
+  { to: "/live", label: "Live", badge: "L" },
+  { to: "/compare", label: "Compare", badge: "Co" },
 ];
 
 export default function Sidebar() {
@@ -20,6 +20,7 @@ export default function Sidebar() {
             end={link.to === "/"}
             className={({ isActive }) => "nav-link" + (isActive ? " active" : "")}
           >
+            <span className="nav-badge">{link.badge}</span>
             {link.label}
           </NavLink>
         ))}
