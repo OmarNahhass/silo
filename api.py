@@ -26,12 +26,14 @@ warnings.filterwarnings("ignore")
 
 from concurrent.futures import ThreadPoolExecutor
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from data_fetcher import fetch_data, PERIOD_OPTIONS
-from model_registry import MODELS
+from model_registry import MODELS, ENSEMBLE_META
+from utils.metrics import rmse
 from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
 import live_forecast
 
@@ -88,7 +90,53 @@ def get_models():
         {"key": spec["key"], "name": spec["name"], "category": spec["category"],
          "math": spec["math"], "note": spec["note"]}
         for spec in MODELS
+    ] + [{k: ENSEMBLE_META[k] for k in ("key", "name", "category", "math", "note")}]
+
+
+def _compute_ensemble(raw_results: list[dict], close: pd.Series) -> dict | None:
+    """Inverse-variance-weighted average of every model that actually produced a
+    usable prediction: weight_i proportional to 1/RMSE_i^2, so more-reliable models
+    (for this specific ticker) get more say. Also reconstructs the ensemble's own
+    fitted series (weighted average of each contributing model's fitted values, on
+    the dates they all share) and scores it on the same trailing-20% holdout window
+    every individual model uses, so its RMSE is measured the same way, not estimated.
+    """
+    valid = [
+        r for r in raw_results
+        if r["error"] is None and r["prediction"] is not None
+        and r["rmse"] is not None and r["rmse"] > 0 and math.isfinite(r["rmse"])
     ]
+    if len(valid) < 2:
+        return None
+
+    inv_var = {r["key"]: 1.0 / (r["rmse"] ** 2) for r in valid}
+    total = sum(inv_var.values())
+    weights = {k: v / total for k, v in inv_var.items()}
+
+    prediction = sum(weights[r["key"]] * r["prediction"] for r in valid)
+
+    fitted_by_key = {r["key"]: r["fitted"] for r in valid}
+    combined = pd.concat(fitted_by_key, axis=1, join="inner").dropna()
+
+    ensemble_rmse = float("nan")
+    ensemble_fitted = pd.Series(dtype=float)
+    if len(combined) >= 10:
+        w_vec = pd.Series({k: weights[k] for k in combined.columns})
+        ensemble_fitted = combined.mul(w_vec, axis=1).sum(axis=1)
+        split = max(1, int(len(ensemble_fitted) * 0.8))
+        holdout_idx = ensemble_fitted.index[split:].intersection(close.index)
+        if len(holdout_idx) > 0:
+            ensemble_rmse = rmse(close.loc[holdout_idx].values, ensemble_fitted.loc[holdout_idx].values)
+
+    return {
+        "key": ENSEMBLE_META["key"],
+        "name": ENSEMBLE_META["name"],
+        "category": ENSEMBLE_META["category"],
+        "prediction": prediction,
+        "rmse": ensemble_rmse,
+        "fitted": ensemble_fitted,
+        "error": None,
+    }
 
 
 @app.post("/api/forecast")
@@ -110,9 +158,9 @@ def post_forecast(req: ForecastRequest):
                 "key": spec["key"],
                 "name": spec["name"],
                 "category": spec["category"],
-                "prediction": _clean_float(result["prediction"]),
-                "rmse": _clean_float(result["rmse"]),
-                "fitted": _series_to_points(result["fitted"]),
+                "prediction": result["prediction"],
+                "rmse": result["rmse"],
+                "fitted": result["fitted"],
                 "error": None,
             }
         except Exception as e:
@@ -122,12 +170,32 @@ def post_forecast(req: ForecastRequest):
                 "category": spec["category"],
                 "prediction": None,
                 "rmse": None,
-                "fitted": [],
+                "fitted": pd.Series(dtype=float),
                 "error": str(e),
             }
 
     # map() preserves MODELS order in the results even though execution is concurrent.
-    model_results = list(_model_executor.map(_run_one, MODELS))
+    # Kept as raw pandas objects (not yet JSON-serialized) so the ensemble below can
+    # reconstruct a weighted-average fitted series and score its own holdout RMSE the
+    # same way each individual model does.
+    raw_results = list(_model_executor.map(_run_one, MODELS))
+
+    ensemble = _compute_ensemble(raw_results, close)
+    if ensemble is not None:
+        raw_results.append(ensemble)
+
+    model_results = [
+        {
+            "key": r["key"],
+            "name": r["name"],
+            "category": r["category"],
+            "prediction": _clean_float(r["prediction"]),
+            "rmse": _clean_float(r["rmse"]),
+            "fitted": _series_to_points(r["fitted"]),
+            "error": r["error"],
+        }
+        for r in raw_results
+    ]
 
     price_history = [
         {

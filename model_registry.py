@@ -21,6 +21,7 @@ from models.svr import perform_svr_prediction, EPSILON as SVR_EPSILON
 
 STATISTICAL = "Statistical"
 MACHINE_LEARNING = "Machine Learning"
+ENSEMBLE = "Ensemble"
 
 MODELS = [
     {
@@ -150,3 +151,26 @@ MODELS = [
                 "nonlinearly through feature space instead of staying flat.",
     },
 ]
+
+# Not part of MODELS -- computed dynamically from the other 10 models' own results
+# (api.py) rather than run against raw price data, so it doesn't fit the MODELS
+# run-function contract. Kept here anyway since it's still static display metadata,
+# same as everything else in this file.
+ENSEMBLE_META = {
+    "key": "ensemble",
+    "name": "Ensemble (Weighted Average)",
+    "category": ENSEMBLE,
+    "math": r"\hat{y}_{ensemble} = \sum_{i=1}^{n} w_i\, \hat{y}_i, \quad "
+            r"w_i = \frac{1/\text{RMSE}_i^2}{\sum_{j=1}^{n} 1/\text{RMSE}_j^2}",
+    "note": "Combines every model above into a single prediction, weighting each by the "
+            "inverse of its squared typical error -- models that have actually been more "
+            "reliable for this ticker get more say, less reliable ones get less. This is "
+            "the classic inverse-variance combination: it's the weighting that minimizes "
+            "the combined error *if* each model's mistakes are independent of the others'. "
+            "That assumption is never perfectly true here, but it's close enough that "
+            "averaging several independently-built models is one of the most consistently "
+            "effective techniques in forecasting -- each model is wrong in a different way, "
+            "so combining them cancels out some of each one's individual mistakes. In "
+            "practice this usually makes the ensemble the single most accurate option "
+            "available, including versus whichever individual model ranks #1 on its own.",
+}

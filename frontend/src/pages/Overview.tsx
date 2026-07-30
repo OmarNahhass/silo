@@ -19,8 +19,10 @@ export default function Overview() {
   }
 
   // Ranked by accuracy (lowest holdout RMSE first) rather than grouped by category --
-  // the point is that anyone unfamiliar with these 10 models can tell at a glance which
+  // the point is that anyone unfamiliar with these models can tell at a glance which
   // one to trust most for this specific ticker. Models that failed to run sort last.
+  // Includes the Ensemble (weighted average of the other 10) as just another entry --
+  // it usually ranks #1 since combining models tends to cancel out individual mistakes.
   const ranked = [...forecast.models]
     .filter((m) => m.error === null && m.rmse !== null)
     .sort((a, b) => (a.rmse as number) - (b.rmse as number));
@@ -38,7 +40,9 @@ export default function Overview() {
       <h3>Forecasts — ranked by accuracy</h3>
       <p className="muted">
         #1 is the model that was most accurate when tested against recent past data for{" "}
-        {forecast.ticker} specifically — not just guessed to be best. Go to{" "}
+        {forecast.ticker} specifically — not just guessed to be best. That's often{" "}
+        <strong>Ensemble (Weighted Average)</strong>, which combines all 10 individual models
+        into one prediction rather than betting on a single one. Go to{" "}
         <strong>{forecast.asset_type}</strong> in the sidebar to pick one model's full chart and
         the math behind it.
       </p>
