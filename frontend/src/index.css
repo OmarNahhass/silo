@@ -144,14 +144,8 @@ h2 {
 
 .muted {
   color: var(--text-muted);
+  margin-top: 0;
   margin-bottom: 16px;
-}
-
-.hint-banner {
-  background: #1e2a3a;
-  color: #93c5fd;
-  padding: 14px 18px;
-  border-radius: 8px;
 }
 
 /* Spacer around every Plotly chart, so headers/text never sit flush against a graph */
@@ -244,13 +238,13 @@ h2 {
 table.leaderboard {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 table.leaderboard th,
 table.leaderboard td {
   text-align: left;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -296,7 +290,7 @@ table.leaderboard td {
 .asset-controls label {
   display: block;
   font-size: 13px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .asset-controls select {
@@ -426,8 +420,7 @@ table.leaderboard td {
 .info-tip-bubble {
   position: absolute;
   bottom: 130%;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 0;
   background: #333333;
   color: var(--text);
   border: 1px solid var(--border);

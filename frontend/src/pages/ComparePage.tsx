@@ -42,12 +42,13 @@ function SlotControls({
         </select>
       </label>
       <label>
-        Search ticker symbol
+        Search or type any ticker symbol
         <SearchableSelect
           options={slot.tickers.map((t) => ({ value: t, label: t }))}
           value={slot.ticker}
-          onChange={(ticker) => onChange({ ...slot, ticker })}
-          placeholder={`Search ${slot.assetType.toLowerCase()} tickers...`}
+          onChange={(ticker) => onChange({ ...slot, ticker: ticker.toUpperCase() })}
+          placeholder={`Search ${slot.assetType.toLowerCase()} tickers, or type any symbol...`}
+          allowCreate
         />
       </label>
     </div>

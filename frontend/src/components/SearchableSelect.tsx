@@ -1,4 +1,5 @@
 import Select, { type StylesConfig } from "react-select";
+import Creatable from "react-select/creatable";
 
 interface Option {
   value: string;
@@ -39,22 +40,30 @@ export default function SearchableSelect({
   value,
   onChange,
   placeholder,
+  allowCreate = false,
 }: {
   options: Option[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  // Lets the user type a value that isn't in `options` and use it anyway -- for
+  // tickers, where the curated list is just a shortcut, not the full set of what's
+  // actually searchable against the API. Never set this for fixed-choice dropdowns
+  // (e.g. the model picker), where every valid value is already in `options`.
+  allowCreate?: boolean;
 }) {
-  const selected = options.find((o) => o.value === value) ?? null;
+  const selected = options.find((o) => o.value === value) ?? (allowCreate && value ? { value, label: value } : null);
+  const Component = allowCreate ? Creatable : Select;
 
   return (
-    <Select
+    <Component
       options={options}
       value={selected}
       onChange={(opt) => opt && onChange(opt.value)}
       placeholder={placeholder ?? "Search..."}
       styles={darkStyles}
       isSearchable
+      formatCreateLabel={allowCreate ? (input: string) => `Use "${input.toUpperCase()}"` : undefined}
     />
   );
 }

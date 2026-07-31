@@ -115,12 +115,13 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
         <aside className="asset-controls">
           <h3>{assetType} Settings</h3>
           <label>
-            Search ticker symbol
+            Search or type any ticker symbol
             <SearchableSelect
               options={tickers.map((t) => ({ value: t, label: t }))}
               value={ticker}
-              onChange={setTicker}
-              placeholder={`Search ${assetType.toLowerCase()} tickers...`}
+              onChange={(t) => setTicker(t.toUpperCase())}
+              placeholder={`Search ${assetType.toLowerCase()} tickers, or type any symbol...`}
+              allowCreate
             />
           </label>
           <label>

@@ -67,12 +67,13 @@ export default function LivePage() {
             </select>
           </label>
           <label>
-            Search ticker symbol
+            Search or type any ticker symbol
             <SearchableSelect
               options={tickers.map((t) => ({ value: t, label: t }))}
               value={ticker}
-              onChange={setTicker}
-              placeholder={`Search ${assetType.toLowerCase()} tickers...`}
+              onChange={(t) => setTicker(t.toUpperCase())}
+              placeholder={`Search ${assetType.toLowerCase()} tickers, or type any symbol...`}
+              allowCreate
             />
           </label>
           <button className="run-button" onClick={() => track(ticker)} disabled={loading}>
@@ -83,7 +84,7 @@ export default function LivePage() {
 
         <div className="asset-main">
           {!live ? (
-            <p className="hint-banner">
+            <p className="muted">
               Search a ticker and click <strong>Track</strong> to see today's live price and
               predicted close.
             </p>
