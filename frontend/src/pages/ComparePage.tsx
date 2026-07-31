@@ -4,6 +4,7 @@ import type { AssetType, ForecastResponse, ModelResult } from "../types";
 import ComparisonChart from "../components/ComparisonChart";
 import SearchableSelect from "../components/SearchableSelect";
 import InfoTip from "../components/InfoTip";
+import { assetTypeLabel } from "../assetTypeLabel";
 
 const PERIOD_OPTIONS = ["6mo", "1y", "2y", "5y", "max"];
 
@@ -38,7 +39,7 @@ function SlotControls({
           onChange={(e) => onChange({ ...slot, assetType: e.target.value as AssetType, ticker: "" })}
         >
           <option value="Stock">Stock</option>
-          <option value="Crypto">Crypto</option>
+          <option value="Crypto">Cryptocurrency</option>
         </select>
       </label>
       <label>
@@ -47,7 +48,7 @@ function SlotControls({
           options={slot.tickers.map((t) => ({ value: t, label: t }))}
           value={slot.ticker}
           onChange={(ticker) => onChange({ ...slot, ticker: ticker.toUpperCase() })}
-          placeholder={`Search ${slot.assetType.toLowerCase()} tickers, or type any symbol...`}
+          placeholder={`Search ${assetTypeLabel(slot.assetType).toLowerCase()} tickers, or type any symbol...`}
           allowCreate
         />
       </label>
@@ -121,8 +122,8 @@ export default function ComparePage() {
       <h2>Compare Two Tickers</h2>
       <p className="muted">
         Run the same 10 forecasting models on two tickers side by side -- a stock vs. a stock, a
-        crypto vs. a crypto, or a stock vs. a crypto -- to see which one each model expects to
-        have the better <strong>next trading day's closing price</strong>.
+        cryptocurrency vs. a cryptocurrency, or a stock vs. a cryptocurrency -- to see which one
+        each model expects to have the better <strong>next trading day's closing price</strong>.
       </p>
 
       <div className="compare-controls">

@@ -4,6 +4,7 @@ import type { AssetType, LiveForecast } from "../types";
 import IntradayChart from "../components/IntradayChart";
 import SearchableSelect from "../components/SearchableSelect";
 import InfoTip from "../components/InfoTip";
+import { assetTypeLabel } from "../assetTypeLabel";
 
 const REFRESH_INTERVAL_MS = 60_000;
 
@@ -63,7 +64,7 @@ export default function LivePage() {
             Asset type
             <select value={assetType} onChange={(e) => setAssetType(e.target.value as AssetType)}>
               <option value="Stock">Stock</option>
-              <option value="Crypto">Crypto</option>
+              <option value="Crypto">Cryptocurrency</option>
             </select>
           </label>
           <label>
@@ -72,7 +73,7 @@ export default function LivePage() {
               options={tickers.map((t) => ({ value: t, label: t }))}
               value={ticker}
               onChange={(t) => setTicker(t.toUpperCase())}
-              placeholder={`Search ${assetType.toLowerCase()} tickers, or type any symbol...`}
+              placeholder={`Search ${assetTypeLabel(assetType).toLowerCase()} tickers, or type any symbol...`}
               allowCreate
             />
           </label>
@@ -83,12 +84,7 @@ export default function LivePage() {
         </aside>
 
         <div className="asset-main">
-          {!live ? (
-            <p className="muted">
-              Search a ticker and click <strong>Track</strong> to see today's live price and
-              predicted close.
-            </p>
-          ) : (
+          {live && (
             <>
               <h3>
                 {live.ticker} — {live.trade_date}

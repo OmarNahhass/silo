@@ -8,6 +8,7 @@ import SearchableSelect from "../components/SearchableSelect";
 import InfoTip from "../components/InfoTip";
 import MetricTile from "../components/MetricTile";
 import Leaderboard from "../components/Leaderboard";
+import { assetTypeLabel } from "../assetTypeLabel";
 
 const PERIOD_OPTIONS = ["6mo", "1y", "2y", "5y", "max"];
 
@@ -98,7 +99,7 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   return (
     <div className="page asset-layout">
       <div className="asset-main-header">
-        <h2>{assetType} Forecasts</h2>
+        <h2>{assetTypeLabel(assetType)} Forecasts</h2>
         {matchingForecast && (
           <button className="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
             {settingsOpen ? "Hide settings" : "Change ticker"}
@@ -113,14 +114,14 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
 
       {settingsOpen && (
         <aside className="asset-controls">
-          <h3>{assetType} Settings</h3>
+          <h3>{assetTypeLabel(assetType)} Settings</h3>
           <label>
             Search or type any ticker symbol
             <SearchableSelect
               options={tickers.map((t) => ({ value: t, label: t }))}
               value={ticker}
               onChange={(t) => setTicker(t.toUpperCase())}
-              placeholder={`Search ${assetType.toLowerCase()} tickers, or type any symbol...`}
+              placeholder={`Search ${assetTypeLabel(assetType).toLowerCase()} tickers, or type any symbol...`}
               allowCreate
             />
           </label>

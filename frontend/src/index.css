@@ -67,7 +67,8 @@ body {
 }
 
 .brand {
-  font-size: 20px;
+  font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.3px;
   color: var(--accent);
@@ -285,18 +286,25 @@ table.leaderboard td {
   width: 480px;
   flex-shrink: 0;
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.asset-controls h3 {
+  margin: 0;
 }
 
 .asset-controls label {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   font-size: 13px;
-  margin-bottom: 20px;
 }
 
 .asset-controls select {
   display: block;
   width: 100%;
-  margin-top: 4px;
   padding: 8px;
   background: var(--bg);
   color: var(--text);
