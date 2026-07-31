@@ -36,6 +36,7 @@ from model_registry import MODELS, ENSEMBLE_META
 from utils.metrics import rmse
 from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
 import live_forecast
+import prediction_history
 
 app = FastAPI(title="CryptoCast API")
 
@@ -49,6 +50,7 @@ app.add_middleware(
 )
 
 live_forecast.init_db()
+prediction_history.init_db()
 
 # The 10 models are independent of each other, and the slow ones (SARIMA's iterative MLE
 # fit, Random Forest/XGBoost's tree ensembles) do their real work in C/Fortran code that
@@ -180,6 +182,25 @@ def post_forecast(req: ForecastRequest):
     # same way each individual model does.
     raw_results = list(_model_executor.map(_run_one, MODELS))
 
+    # Bias-correct each model's point prediction using its own tracked history of real
+    # predictions vs. what actually happened (prediction_history.py) -- e.g. if Random
+    # Forest has quietly run $0.40 too high on average over its last 30 resolved AAPL
+    # predictions, shift today's prediction down by $0.40. Only the point "prediction"
+    # is corrected, not "fitted"/"rmse" (those describe the historical backtest, a
+    # separate, unrelated notion of accuracy from this ticker's live track record).
+    ticker = req.ticker.strip().upper()
+    as_of_date = close.index[-1].strftime("%Y-%m-%d")
+    raw_predictions = {
+        r["key"]: r["prediction"] for r in raw_results if r["error"] is None and r["prediction"] is not None
+    }
+    corrections = prediction_history.record_and_correct(ticker, req.asset_type, as_of_date, raw_predictions, close)
+    for r in raw_results:
+        info = corrections.get(r["key"])
+        if info is not None:
+            r["prediction"] = info["corrected"]
+            r["bias"] = info["bias"]
+            r["bias_n_samples"] = info["n_samples"]
+
     ensemble = _compute_ensemble(raw_results, close)
     if ensemble is not None:
         raw_results.append(ensemble)
@@ -193,6 +214,8 @@ def post_forecast(req: ForecastRequest):
             "rmse": _clean_float(r["rmse"]),
             "fitted": _series_to_points(r["fitted"]),
             "error": r["error"],
+            "bias": _clean_float(r.get("bias")),
+            "bias_n_samples": r.get("bias_n_samples", 0),
         }
         for r in raw_results
     ]
@@ -210,7 +233,7 @@ def post_forecast(req: ForecastRequest):
     ]
 
     return {
-        "ticker": req.ticker.strip().upper(),
+        "ticker": ticker,
         "asset_type": req.asset_type,
         "period": req.period,
         "trading_days": len(data),
