@@ -15,7 +15,7 @@ export default function Leaderboard({ models }: { models: ModelResult[] }) {
             <th>Rank</th>
             <th>Model</th>
             <th>Category</th>
-            <th>Next-Day Close</th>
+            <th>Predicted Next-Day Close</th>
             <th>
               Typical Error
               <InfoTip text="On past data the model didn't train on, its predictions were off by about this much on average. Lower is better. (Technically: RMSE, root mean squared error.)" />

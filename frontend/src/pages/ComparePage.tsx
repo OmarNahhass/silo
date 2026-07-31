@@ -151,7 +151,7 @@ export default function ComparePage() {
             <div className="metric-tile">
               <div className="metric-label">{forecastA.ticker}</div>
               <div className="metric-category">Most accurate: {bestA?.name ?? "n/a"}</div>
-              <div className="metric-value-label">Next-Day Close</div>
+              <div className="metric-value-label">Predicted Next-Day Close</div>
               {pctA !== null ? (
                 <div className={"metric-delta " + (pctA >= 0 ? "up" : "down")}>
                   {pctA >= 0 ? "↑" : "↓"} forecasted {pctA >= 0 ? "+" : ""}
@@ -164,7 +164,7 @@ export default function ComparePage() {
             <div className="metric-tile">
               <div className="metric-label">{forecastB.ticker}</div>
               <div className="metric-category">Most accurate: {bestB?.name ?? "n/a"}</div>
-              <div className="metric-value-label">Next-Day Close</div>
+              <div className="metric-value-label">Predicted Next-Day Close</div>
               {pctB !== null ? (
                 <div className={"metric-delta " + (pctB >= 0 ? "up" : "down")}>
                   {pctB >= 0 ? "↑" : "↓"} forecasted {pctB >= 0 ? "+" : ""}
@@ -203,9 +203,9 @@ export default function ComparePage() {
               <thead>
                 <tr>
                   <th>Model</th>
-                  <th>{forecastA.ticker} Next-Day Close</th>
+                  <th>{forecastA.ticker} Predicted Close</th>
                   <th>{forecastA.ticker} Typical Error</th>
-                  <th>{forecastB.ticker} Next-Day Close</th>
+                  <th>{forecastB.ticker} Predicted Close</th>
                   <th>{forecastB.ticker} Typical Error</th>
                 </tr>
               </thead>

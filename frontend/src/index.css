@@ -57,6 +57,9 @@ body {
 .sidebar {
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 240px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
@@ -99,14 +102,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #1a1a1a;
+  border-radius: 6px;
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 9px;
 }
 
 .content {
@@ -201,6 +205,14 @@ h2 {
   font-weight: 600;
 }
 
+.metric-value-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 700;
+}
+
 .metric-value {
   font-size: 24px;
   font-weight: 700;
@@ -275,8 +287,8 @@ table.leaderboard td {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 16px;
-  width: 280px;
+  padding: 40px;
+  width: 480px;
   flex-shrink: 0;
   align-self: center;
 }
@@ -284,7 +296,7 @@ table.leaderboard td {
 .asset-controls label {
   display: block;
   font-size: 13px;
-  margin-bottom: 12px;
+  margin-bottom: 28px;
 }
 
 .asset-controls select {

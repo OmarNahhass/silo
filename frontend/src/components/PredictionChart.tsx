@@ -48,12 +48,12 @@ export default function PredictionChart({
           x: [forecastDate],
           y: [result.prediction],
           marker: { color: COLORS.forecast, size: 12, symbol: "diamond", line: { color: "white", width: 1 } },
-          name: "Next-Day Close (Forecast)",
+          name: "Predicted Next-Day Close",
         },
       ]}
       layout={{
         ...PLOTLY_LAYOUT_BASE,
-        title: { text: `${result.name}: Actual vs. Fitted vs. Next-Day Close` },
+        title: { text: `${result.name}: Actual vs. Fitted vs. Predicted Next-Day Close` },
         yaxis: { title: { text: "Price (USD)" } },
       }}
       config={PLOTLY_CONFIG}

@@ -6,6 +6,8 @@ import PriceChart from "../components/PriceChart";
 import ModelDetail from "../components/ModelDetail";
 import SearchableSelect from "../components/SearchableSelect";
 import InfoTip from "../components/InfoTip";
+import MetricTile from "../components/MetricTile";
+import Leaderboard from "../components/Leaderboard";
 
 const PERIOD_OPTIONS = ["6mo", "1y", "2y", "5y", "max"];
 
@@ -80,11 +82,35 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
       })
     : [];
 
+  // Ranked by accuracy (lowest holdout RMSE first) rather than grouped by category --
+  // the point is that anyone unfamiliar with these models can tell at a glance which
+  // one to trust most for this specific ticker. Models that failed to run sort last.
+  const ranked = matchingForecast
+    ? [...matchingForecast.models]
+        .filter((m) => m.error === null && m.rmse !== null)
+        .sort((a, b) => (a.rmse as number) - (b.rmse as number))
+    : [];
+  const failed = matchingForecast ? matchingForecast.models.filter((m) => m.error !== null || m.rmse === null) : [];
+
   const selectedResult = matchingForecast?.models.find((m) => m.key === selectedKey);
   const selectedMeta = models.find((m) => m.key === selectedKey);
 
   return (
     <div className="page asset-layout">
+      <div className="asset-main-header">
+        <h2>{assetType} Forecasts</h2>
+        {matchingForecast && (
+          <button className="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
+            {settingsOpen ? "Hide settings" : "Change ticker"}
+          </button>
+        )}
+      </div>
+      <p className="muted">
+        Runs 10 different forecasting models on a ticker's price history to predict its{" "}
+        <strong>next trading day's closing price</strong>, and shows which ones have actually
+        been most accurate for it.
+      </p>
+
       {settingsOpen && (
         <aside className="asset-controls">
           <h3>{assetType} Settings</h3>
@@ -114,73 +140,81 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
         </aside>
       )}
 
-      <div className="asset-main">
-        <div className="asset-main-header">
-          <h2>{assetType} Forecasts</h2>
-          {matchingForecast && (
-            <button className="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
-              {settingsOpen ? "Hide settings" : "Change ticker"}
-            </button>
+      {matchingForecast && (
+        <div className="asset-main">
+          <h3>
+            {matchingForecast.ticker} — {matchingForecast.trading_days} trading days
+          </h3>
+          <div className="chart-wrap">
+            <PriceChart ticker={matchingForecast.ticker} bars={matchingForecast.price_history} />
+          </div>
+
+          <h3>Forecasts — ranked by accuracy</h3>
+          <p className="muted">
+            #1 is the model that was most accurate when tested against recent past data for{" "}
+            {matchingForecast.ticker} specifically — not just guessed to be best. That's often{" "}
+            <strong>Ensemble (Weighted Average)</strong>, which combines all 10 individual models
+            into one prediction rather than betting on a single one.
+          </p>
+          <div className="tile-grid">
+            {ranked.map((m, i) => (
+              <MetricTile key={m.key} result={m} lastClose={matchingForecast.last_close} rank={i + 1} />
+            ))}
+            {failed.map((m) => (
+              <MetricTile key={m.key} result={m} lastClose={matchingForecast.last_close} />
+            ))}
+          </div>
+
+          <h4>
+            Leaderboard — most accurate first
+            <InfoTip text="Ranked by typical error (RMSE) on data each model didn't train on. Lower error means its past predictions were, on average, closer to what actually happened." />
+          </h4>
+          <Leaderboard models={matchingForecast.models} />
+
+          <h3>
+            Select a forecasting model
+            <InfoTip text="Each model uses a different approach to guess tomorrow's price. None are perfect -- comparing several is how you tell a lucky guess from a genuinely useful one." />
+          </h3>
+          <p className="muted">
+            Don't want to pick just one? <strong>Ensemble (Weighted Average)</strong> combines
+            all 10 into a single prediction, weighted by how accurate each has actually been for
+            this ticker. It's usually the single most accurate option here -- look for it in the
+            list below.
+          </p>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={sortByAccuracy}
+              onChange={(e) => setSortByAccuracy(e.target.checked)}
+            />
+            Sort by accuracy (most accurate first)
+          </label>
+          <label>
+            Forecasting model
+            <SearchableSelect
+              options={orderedModels.map((m, i) => ({
+                value: m.key,
+                label:
+                  (sortByAccuracy && m.rmse !== null ? `#${i + 1} ` : "") +
+                  m.name +
+                  (m.rmse !== null ? ` — avg error $${m.rmse.toFixed(2)}` : m.error ? " (failed)" : ""),
+              }))}
+              value={selectedKey}
+              onChange={setSelectedKey}
+              placeholder="Search models..."
+            />
+          </label>
+
+          {selectedResult && (
+            <ModelDetail
+              result={selectedResult}
+              meta={selectedMeta}
+              bars={matchingForecast.price_history}
+              lastClose={matchingForecast.last_close}
+            />
           )}
         </div>
-        <p className="muted">
-          Runs 10 different forecasting models on a ticker's price history and shows which ones
-          have actually been most accurate for it.
-        </p>
-
-        {!matchingForecast ? (
-          <p className="hint-banner">
-            Search a {assetType.toLowerCase()} ticker in the sidebar, then click{" "}
-            <strong>Run Forecast</strong>.
-          </p>
-        ) : (
-          <>
-            <h3>
-              {matchingForecast.ticker} — {matchingForecast.trading_days} trading days
-            </h3>
-            <div className="chart-wrap">
-              <PriceChart ticker={matchingForecast.ticker} bars={matchingForecast.price_history} />
-            </div>
-
-            <h3>
-              Select a forecasting model
-              <InfoTip text="Each model uses a different approach to guess tomorrow's price. None are perfect -- comparing several is how you tell a lucky guess from a genuinely useful one." />
-            </h3>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={sortByAccuracy}
-                onChange={(e) => setSortByAccuracy(e.target.checked)}
-              />
-              Sort by accuracy (most accurate first)
-            </label>
-            <label>
-              Forecasting model
-              <SearchableSelect
-                options={orderedModels.map((m, i) => ({
-                  value: m.key,
-                  label:
-                    (sortByAccuracy && m.rmse !== null ? `#${i + 1} ` : "") +
-                    m.name +
-                    (m.rmse !== null ? ` — avg error $${m.rmse.toFixed(2)}` : m.error ? " (failed)" : ""),
-                }))}
-                value={selectedKey}
-                onChange={setSelectedKey}
-                placeholder="Search models..."
-              />
-            </label>
-
-            {selectedResult && (
-              <ModelDetail
-                result={selectedResult}
-                meta={selectedMeta}
-                bars={matchingForecast.price_history}
-                lastClose={matchingForecast.last_close}
-              />
-            )}
-          </>
-        )}
-      </div>
+      )}
     </div>
   );
 }

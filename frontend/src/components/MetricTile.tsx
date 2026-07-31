@@ -33,7 +33,7 @@ export default function MetricTile({
         <div className="metric-label">{result.name}</div>
       </div>
       <div className="metric-category">{result.category}</div>
-      <div className="metric-value-label">Next-Day Close</div>
+      <div className="metric-value-label">Predicted Next-Day Close</div>
       <div className="metric-value">${result.prediction.toFixed(2)}</div>
       <div className={"metric-delta " + (isUp ? "up" : "down")}>
         {isUp ? "↑" : "↓"} {delta >= 0 ? "+" : ""}
