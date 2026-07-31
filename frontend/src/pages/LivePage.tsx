@@ -104,7 +104,7 @@ export default function LivePage() {
                 </div>
                 {live.predicted_close !== null ? (
                   <div className="metric-tile">
-                    <div className="metric-label">Predicted Close</div>
+                    <div className="metric-label">Today's Predicted Close</div>
                     <div className="metric-value">${live.predicted_close.toFixed(2)}</div>
                     {delta !== null && (
                       <div className={"metric-delta " + (delta >= 0 ? "up" : "down")}>
@@ -114,7 +114,7 @@ export default function LivePage() {
                   </div>
                 ) : (
                   <div className="metric-tile metric-tile-error">
-                    <div className="metric-label">Predicted Close</div>
+                    <div className="metric-label">Today's Predicted Close</div>
                     <div className="metric-error">{live.error ?? "Unavailable"}</div>
                   </div>
                 )}

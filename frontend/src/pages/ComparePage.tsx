@@ -120,8 +120,8 @@ export default function ComparePage() {
       <h2>Compare Two Tickers</h2>
       <p className="muted">
         Run the same 10 forecasting models on two tickers side by side -- a stock vs. a stock, a
-        crypto vs. a crypto, or a stock vs. a crypto -- to see which one each model expects to do
-        better.
+        crypto vs. a crypto, or a stock vs. a crypto -- to see which one each model expects to
+        have the better <strong>next trading day's closing price</strong>.
       </p>
 
       <div className="compare-controls">
@@ -151,6 +151,7 @@ export default function ComparePage() {
             <div className="metric-tile">
               <div className="metric-label">{forecastA.ticker}</div>
               <div className="metric-category">Most accurate: {bestA?.name ?? "n/a"}</div>
+              <div className="metric-value-label">Next-Day Close</div>
               {pctA !== null ? (
                 <div className={"metric-delta " + (pctA >= 0 ? "up" : "down")}>
                   {pctA >= 0 ? "↑" : "↓"} forecasted {pctA >= 0 ? "+" : ""}
@@ -163,6 +164,7 @@ export default function ComparePage() {
             <div className="metric-tile">
               <div className="metric-label">{forecastB.ticker}</div>
               <div className="metric-category">Most accurate: {bestB?.name ?? "n/a"}</div>
+              <div className="metric-value-label">Next-Day Close</div>
               {pctB !== null ? (
                 <div className={"metric-delta " + (pctB >= 0 ? "up" : "down")}>
                   {pctB >= 0 ? "↑" : "↓"} forecasted {pctB >= 0 ? "+" : ""}
@@ -201,9 +203,9 @@ export default function ComparePage() {
               <thead>
                 <tr>
                   <th>Model</th>
-                  <th>{forecastA.ticker} Forecast</th>
+                  <th>{forecastA.ticker} Next-Day Close</th>
                   <th>{forecastA.ticker} Typical Error</th>
-                  <th>{forecastB.ticker} Forecast</th>
+                  <th>{forecastB.ticker} Next-Day Close</th>
                   <th>{forecastB.ticker} Typical Error</th>
                 </tr>
               </thead>

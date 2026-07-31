@@ -39,6 +39,8 @@ export default function Overview() {
 
       <h3>Forecasts — ranked by accuracy</h3>
       <p className="muted">
+        Every tile below predicts {forecast.ticker}'s <strong>next trading day's closing
+        price</strong> (looking for today's live price instead? see the <strong>Live</strong> page).
         #1 is the model that was most accurate when tested against recent past data for{" "}
         {forecast.ticker} specifically — not just guessed to be best. That's often{" "}
         <strong>Ensemble (Weighted Average)</strong>, which combines all 10 individual models
