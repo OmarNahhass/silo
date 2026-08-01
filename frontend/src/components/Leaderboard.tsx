@@ -18,7 +18,10 @@ export default function Leaderboard({ models }: { models: ModelResult[] }) {
             <th>Predicted Close</th>
             <th>
               Typical Error
-              <InfoTip text="On past data the model didn't train on, its predictions were off by about this much on average. Lower is better. (Technically: RMSE, root mean squared error.)" />
+              <InfoTip
+                openDownward
+                text="On past data the model didn't train on, its predictions were off by about this much on average. Lower is better. (Technically: RMSE, root mean squared error.)"
+              />
             </th>
           </tr>
         </thead>

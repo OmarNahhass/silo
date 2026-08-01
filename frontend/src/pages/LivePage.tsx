@@ -148,7 +148,10 @@ export default function LivePage() {
                       <th>Predicted</th>
                       <th>
                         Naive (No Change)
-                        <InfoTip text="The simplest possible guess: assume the price stays exactly where it was when the prediction was made. If the model can't beat this, it isn't adding any value." />
+                        <InfoTip
+                          openDownward
+                          text="The simplest possible guess: assume the price stays exactly where it was when the prediction was made. If the model can't beat this, it isn't adding any value."
+                        />
                       </th>
                       <th>Actual Close</th>
                       <th>Model Error</th>

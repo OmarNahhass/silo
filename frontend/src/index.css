@@ -396,6 +396,17 @@ table.leaderboard td {
   margin-bottom: 16px;
 }
 
+/* .asset-controls is normally a single fixed-width panel centered on its own page
+   (Stock/Crypto/Live) -- here there are two side by side, so let them share the row
+   instead of each claiming a rigid 480px (which forced them to wrap onto separate
+   lines on anything narrower than ~1000px). */
+.compare-controls .asset-controls {
+  width: auto;
+  flex: 1 1 320px;
+  max-width: 480px;
+  align-self: stretch;
+}
+
 .period-label {
   display: block;
   font-size: 13px;
@@ -455,6 +466,11 @@ table.leaderboard td {
   visibility: hidden;
   transition: opacity 0.15s;
   pointer-events: none;
+}
+
+.info-tip-below .info-tip-bubble {
+  bottom: auto;
+  top: 130%;
 }
 
 .info-tip:hover .info-tip-bubble,
