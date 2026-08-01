@@ -485,6 +485,43 @@ table.leaderboard td {
   visibility: visible;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-card h2 {
+  margin-top: 0;
+}
+
+.modal-card p {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.modal-card .run-button {
+  margin-top: 8px;
+}
+
 /* ---- Responsive: everything above assumes desktop width (fixed 240px sidebar,
    480px settings panels, etc.) -- below a tablet-ish width, the sidebar becomes a
    compact horizontal top bar instead of a tall left column, and every fixed-width
@@ -545,5 +582,9 @@ table.leaderboard td {
 
   .info-tip-bubble {
     width: 180px;
+  }
+
+  .modal-card {
+    padding: 20px;
   }
 }

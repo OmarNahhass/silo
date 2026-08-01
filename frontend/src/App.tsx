@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ForecastProvider } from "./context/ForecastContext";
 import Sidebar from "./components/Sidebar";
+import DisclaimerModal from "./components/DisclaimerModal";
 import AssetPage from "./pages/AssetPage";
 import LivePage from "./pages/LivePage";
 import ComparePage from "./pages/ComparePage";
@@ -9,6 +10,7 @@ export default function App() {
   return (
     <ForecastProvider>
       <BrowserRouter>
+        <DisclaimerModal />
         <div className="app-shell">
           <Sidebar />
           <main className="content">
