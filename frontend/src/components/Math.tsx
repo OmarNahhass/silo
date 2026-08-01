@@ -15,6 +15,10 @@ export default function Math({ tex }: { tex: string }) {
     }
   }, [tex]);
 
+  // KaTeX doesn't reflow -- a wide formula (e.g. the ensemble's summation-with-fraction)
+  // renders at its natural width regardless of container size, which can be wider than
+  // an entire phone screen. Scope horizontal scrolling to just the formula rather than
+  // letting it push the whole page wider.
   // eslint-disable-next-line react/no-danger
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div className="math-wrap" dangerouslySetInnerHTML={{ __html: html }} />;
 }

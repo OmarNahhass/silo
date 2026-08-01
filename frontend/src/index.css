@@ -384,6 +384,11 @@ table.leaderboard td {
   margin-top: 12px;
 }
 
+.math-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .error-text {
   color: var(--down);
   font-size: 13px;
@@ -478,4 +483,67 @@ table.leaderboard td {
 .info-tip:focus-within .info-tip-bubble {
   opacity: 1;
   visibility: visible;
+}
+
+/* ---- Responsive: everything above assumes desktop width (fixed 240px sidebar,
+   480px settings panels, etc.) -- below a tablet-ish width, the sidebar becomes a
+   compact horizontal top bar instead of a tall left column, and every fixed-width
+   box becomes fluid so nothing can force horizontal overflow on a phone screen. ---- */
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+  }
+
+  .brand {
+    margin-bottom: 0;
+    font-size: 22px;
+  }
+
+  .sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex: none;
+    width: 100%;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .nav-link {
+    padding: 6px 10px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .asset-main-header {
+    flex-wrap: wrap;
+  }
+
+  .asset-controls {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px;
+  }
+
+  .compare-controls .asset-controls {
+    flex-basis: 100%;
+  }
+
+  .info-tip-bubble {
+    width: 180px;
+  }
 }
