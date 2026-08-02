@@ -1,5 +1,3 @@
-"""Unit tests for api.py's _compute_ensemble -- pure function, no network/DB needed."""
-
 import pandas as pd
 import pytest
 
@@ -17,9 +15,6 @@ def _result(key, prediction, rmse, fitted=None):
 
 
 def test_ensemble_weights_favor_the_more_accurate_model():
-    # w_i is proportional to 1/rmse_i^2, so model "a" (rmse=1) should outweigh
-    # model "b" (rmse=2) by a factor of 4, pulling the ensemble prediction much
-    # closer to a's own prediction than a plain 50/50 average would.
     raw_results = [_result("a", 100.0, 1.0), _result("b", 110.0, 2.0)]
 
     ensemble = _compute_ensemble(raw_results, pd.Series(dtype=float))
@@ -43,7 +38,7 @@ def test_ensemble_ignores_failed_or_zero_rmse_models():
     raw_results = [
         _result("a", 100.0, 1.0),
         {"key": "b", "error": "blew up", "prediction": None, "rmse": None, "fitted": pd.Series(dtype=float)},
-        _result("c", 500.0, 0.0),  # rmse of exactly 0 would divide by zero -- must be excluded
+        _result("c", 500.0, 0.0),
     ]
     ensemble = _compute_ensemble(raw_results, pd.Series(dtype=float))
-    assert ensemble is None  # only one valid model ("a") remains, need at least 2
+    assert ensemble is None

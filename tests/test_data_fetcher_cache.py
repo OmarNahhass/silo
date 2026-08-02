@@ -1,5 +1,3 @@
-"""data_fetcher.fetch_data's TTL cache -- mocks yfinance entirely, no network calls."""
-
 from unittest.mock import patch
 
 import pandas as pd
@@ -39,7 +37,6 @@ def test_different_period_is_a_cache_miss():
 
 
 def test_cached_result_is_an_independent_copy():
-    # Callers mutating their own copy shouldn't corrupt what the next caller gets back.
     with patch("data_fetcher.yf.download", return_value=_fake_yf_response()):
         first = data_fetcher.fetch_data("AAPL", asset_type="Stock", period="2y")
         first.loc[first.index[0], "Close"] = 999.0

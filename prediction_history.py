@@ -1,20 +1,11 @@
-"""Persists each daily model's raw next-trading-day-close prediction, resolves it
-against the real close once that day's data is available, and tracks each model's
-running bias (average signed error) so future predictions can be corrected for it.
-
-Same pattern as live_forecast.py: no scheduler -- everything resolves the next time
-a forecast is requested for that ticker. Shares the same SQLite file (data/predictions.db)
-in a separate table, since both are local, gitignored runtime state for this project.
-"""
-
 import sqlite3
 from pathlib import Path
 
 import pandas as pd
 
 DB_PATH = Path(__file__).parent / "data" / "predictions.db"
-MIN_BIAS_SAMPLES = 10   # don't correct until there's enough real history to trust the average
-BIAS_WINDOW = 30        # only look at the most recent N resolved predictions per model
+MIN_BIAS_SAMPLES = 10
+BIAS_WINDOW = 30
 
 
 def init_db():
@@ -39,10 +30,6 @@ def init_db():
 
 
 def _resolve_pending(conn, ticker: str, asset_type: str, close: pd.Series):
-    """For any pending prediction whose as_of_date is now followed by a later date in
-    this fresh fetch, fill in the actual close of the row right after as_of_date --
-    that's the real outcome the prediction was actually trying to guess.
-    """
     pending = conn.execute(
         "SELECT model_key, as_of_date FROM daily_predictions "
         "WHERE ticker = ? AND asset_type = ? AND actual_close IS NULL",
@@ -57,7 +44,7 @@ def _resolve_pending(conn, ticker: str, asset_type: str, close: pd.Series):
     for model_key, as_of_date in pending:
         idx = pos.get(as_of_date)
         if idx is None or idx + 1 >= len(date_strs):
-            continue  # as_of_date not in this fetch, or is still the most recent day
+            continue
         actual = float(close.iloc[idx + 1])
         conn.execute(
             "UPDATE daily_predictions SET actual_close = ? "
@@ -70,9 +57,6 @@ def _resolve_pending(conn, ticker: str, asset_type: str, close: pd.Series):
 def record_and_correct(
     ticker: str, asset_type: str, as_of_date: str, raw_predictions: dict, close: pd.Series
 ) -> dict:
-    """raw_predictions: {model_key: raw_prediction}.
-    Returns {model_key: {"bias": float, "corrected": float, "n_samples": int}}.
-    """
     conn = sqlite3.connect(DB_PATH)
     try:
         _resolve_pending(conn, ticker, asset_type, close)

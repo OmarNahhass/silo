@@ -7,8 +7,6 @@ __pycache__/
 venv/
 env/
 
-.streamlit/secrets.toml
-
 .DS_Store
 
 data/*.db

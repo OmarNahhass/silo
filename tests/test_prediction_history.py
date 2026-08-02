@@ -1,6 +1,3 @@
-"""prediction_history.record_and_correct: verifies the bias math against a synthetic,
-isolated SQLite DB (never touches the real data/predictions.db)."""
-
 import sqlite3
 
 import pandas as pd
@@ -34,8 +31,6 @@ def _insert_resolved(db_path, ticker, model_key, n, raw_prediction, actual_close
 
 
 def test_bias_correction_converges_to_known_bias(isolated_db):
-    # Model has consistently predicted $3.00 too low across 15 resolved days --
-    # record_and_correct should learn that exact bias and apply it going forward.
     _insert_resolved(isolated_db, "TEST", "lr", n=15, raw_prediction=100.0, actual_close=103.0)
 
     result = prediction_history.record_and_correct(
@@ -48,7 +43,6 @@ def test_bias_correction_converges_to_known_bias(isolated_db):
 
 
 def test_no_correction_below_minimum_sample_size(isolated_db):
-    # Only 5 resolved days -- fewer than MIN_BIAS_SAMPLES -- so correction should stay off.
     _insert_resolved(isolated_db, "TEST", "lr", n=5, raw_prediction=100.0, actual_close=110.0)
 
     result = prediction_history.record_and_correct(

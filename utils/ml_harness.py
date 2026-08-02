@@ -7,18 +7,6 @@ from utils.metrics import rmse
 
 
 def fit_return_based_model(estimator, data: pd.DataFrame, test_frac: float = 0.2):
-    """
-    Shared train/evaluate/forecast pipeline for any scikit-learn-compatible
-    regressor. The estimator learns to predict the next-day *log return*
-    from engineered technical-indicator features (see utils/features.py),
-    since log returns are approximately stationary while raw price levels
-    are not -- a model trained directly on price levels would just memorize
-    the price range it was trained on and fail to extrapolate.
-
-    Predicted prices are reconstructed one step at a time via
-    Close_{t+1} = Close_t * exp(predicted_log_return), never chained
-    forward, so forecast error doesn't compound across days.
-    """
     close = data["Close"]
     feat, target = build_features(data)
     feat = feat.dropna()

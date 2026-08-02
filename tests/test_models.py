@@ -1,9 +1,3 @@
-"""Runs each of the 10 forecasting models against synthetic price data so a broken
-model (bad math, an exception, a NaN/negative prediction) fails CI instead of
-shipping silently -- plus one hand-verifiable case: linear regression on a perfectly
-linear series should recover the trend almost exactly.
-"""
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -41,8 +35,6 @@ def _make_linear_ohlcv(n: int = 200, start: float = 100.0, step: float = 1.0) ->
 
 
 def test_linear_regression_recovers_slope():
-    """Close[t+1] = Close[t] + 1 with zero noise -- OLS should fit this almost exactly,
-    so the next-day prediction should land right on trend, not just "somewhere close"."""
     data = _make_linear_ohlcv(n=200, start=100.0, step=1.0)
     result = perform_linear_regression(data)
 

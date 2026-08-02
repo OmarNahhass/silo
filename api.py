@@ -1,21 +1,5 @@
-"""FastAPI backend for the CryptoCast React frontend (frontend/). Reuses the same
-data-fetching and model logic as the Streamlit app (main.py) via data_fetcher.py,
-model_registry.py, and utils/tickers.py -- none of that layer imports Streamlit, so
-nothing here duplicates the forecasting logic, only exposes it as JSON.
-
-Run with: uvicorn api:app --reload --port 8000
-"""
-
 import os
 
-# Must run before numpy/statsmodels/sklearn/xgboost are imported anywhere (including
-# transitively via data_fetcher below) -- each of those libraries otherwise spins up
-# its own BLAS thread pool sized to all CPU cores. The API runs all 10 models
-# concurrently in a thread pool (see _model_executor below), and two concurrent
-# /api/forecast requests (e.g. the Compare page) run 20 of those threads at once --
-# without this cap, every one of those threads also tries to grab every core for its
-# own matrix math, and the resulting oversubscription made two concurrent forecasts
-# take ~20s instead of the ~6s they take once each thread is limited to one core.
 for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
              "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_var, "1")
@@ -43,11 +27,6 @@ import prediction_history
 
 app = FastAPI(title="CryptoCast API")
 
-# In dev, ALLOWED_ORIGINS is unset and CORS matches any localhost port (Vite's dev
-# port drifts -- 5173, 5174, ... -- whenever the default is already taken). Once
-# actually deployed, set ALLOWED_ORIGINS to the real frontend origin(s), comma-
-# separated if there's more than one (e.g. a custom domain + a platform subdomain) --
-# the wide-open localhost regex must never be what's live in production.
 _allowed_origins = os.environ.get("ALLOWED_ORIGINS")
 if _allowed_origins:
     app.add_middleware(
@@ -67,26 +46,14 @@ else:
 live_forecast.init_db()
 prediction_history.init_db()
 
-# The 10 models are independent of each other, and the slow ones (SARIMA's iterative MLE
-# fit, Random Forest/XGBoost's tree ensembles) do their real work in C/Fortran code that
-# releases the GIL -- so running them in a thread pool gives real wall-clock speedup
-# instead of the ~10s+ you get from running all 10 one after another.
 _model_executor = ThreadPoolExecutor(max_workers=len(MODELS))
 
-# Lightweight per-IP rate limit on the two expensive endpoints (real yfinance calls
-# plus genuinely heavy compute). This is a backup, not the primary defense -- once
-# deployed, the real protection should be rate-limiting rules at the edge (e.g.
-# Cloudflare), which work correctly across multiple server instances; this in-memory
-# counter only makes sense for a single-process deployment, which is what this is.
 _request_log: dict[str, list[float]] = defaultdict(list)
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT_MAX_REQUESTS = 20
 
 
 def _client_ip(request: Request) -> str:
-    # A reverse proxy (Cloudflare, etc.) sets the real visitor IP in one of these
-    # headers -- without a proxy in front (e.g. local dev), every request would
-    # otherwise look like it's coming from the proxy's own IP instead of the visitor's.
     return (
         request.headers.get("CF-Connecting-IP")
         or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
@@ -105,7 +72,6 @@ def rate_limit(request: Request):
 
 
 def _clean_float(value):
-    """NaN isn't valid JSON -- convert to None so the frontend gets a clean null."""
     if value is None:
         return None
     value = float(value)
@@ -118,7 +84,7 @@ def _series_to_points(series):
 
 class ForecastRequest(BaseModel):
     ticker: str = Field(..., min_length=1, max_length=20)
-    asset_type: str  # "Stock" or "Crypto"
+    asset_type: str
     period: str = PERIOD_OPTIONS[2]
 
 
@@ -141,13 +107,6 @@ def get_models():
 
 
 def _compute_ensemble(raw_results: list[dict], close: pd.Series) -> dict | None:
-    """Inverse-variance-weighted average of every model that actually produced a
-    usable prediction: weight_i proportional to 1/RMSE_i^2, so more-reliable models
-    (for this specific ticker) get more say. Also reconstructs the ensemble's own
-    fitted series (weighted average of each contributing model's fitted values, on
-    the dates they all share) and scores it on the same trailing-20% holdout window
-    every individual model uses, so its RMSE is measured the same way, not estimated.
-    """
     valid = [
         r for r in raw_results
         if r["error"] is None and r["prediction"] is not None
@@ -221,18 +180,8 @@ def post_forecast(req: ForecastRequest, _: None = Depends(rate_limit)):
                 "error": str(e),
             }
 
-    # map() preserves MODELS order in the results even though execution is concurrent.
-    # Kept as raw pandas objects (not yet JSON-serialized) so the ensemble below can
-    # reconstruct a weighted-average fitted series and score its own holdout RMSE the
-    # same way each individual model does.
     raw_results = list(_model_executor.map(_run_one, MODELS))
 
-    # Bias-correct each model's point prediction using its own tracked history of real
-    # predictions vs. what actually happened (prediction_history.py) -- e.g. if Random
-    # Forest has quietly run $0.40 too high on average over its last 30 resolved AAPL
-    # predictions, shift today's prediction down by $0.40. Only the point "prediction"
-    # is corrected, not "fitted"/"rmse" (those describe the historical backtest, a
-    # separate, unrelated notion of accuracy from this ticker's live track record).
     ticker = req.ticker.strip().upper()
     as_of_date = close.index[-1].strftime("%Y-%m-%d")
     raw_predictions = {

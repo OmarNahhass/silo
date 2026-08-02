@@ -6,7 +6,6 @@ from utils.metrics import rmse
 
 
 def perform_linear_regression(data: pd.DataFrame, test_frac: float = 0.2):
-    """Predict next-day close from today's close: Close[t+1] = b0 + b1 * Close[t]."""
     close = data["Close"].dropna()
 
     X_all = close.values[:-1].reshape(-1, 1)
@@ -21,7 +20,6 @@ def perform_linear_regression(data: pd.DataFrame, test_frac: float = 0.2):
     fitted_all = model.predict(X_all)
     test_rmse = rmse(y_all[split:], fitted_all[split:]) if split < len(X_all) else float("nan")
 
-    # Refit on the full series for the actual next-step forecast
     model.fit(X_all, y_all)
     prediction = float(model.predict(np.array([[close.values[-1]]]))[0])
 

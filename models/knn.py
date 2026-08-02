@@ -8,7 +8,6 @@ N_NEIGHBORS = 8
 
 
 def perform_knn_prediction(data, test_frac: float = 0.2):
-    """k-NN regression: average the next-day return on the k most similar historical days."""
     estimator = Pipeline([
         ("scale", StandardScaler()),
         ("knn", KNeighborsRegressor(n_neighbors=N_NEIGHBORS)),

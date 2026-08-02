@@ -8,9 +8,6 @@ MIN_HISTORY_DAYS = 10
 
 
 def _day_pair(group: pd.DataFrame, now_time: pd.Timestamp):
-    """For one historical day's bars, return (price at/just before now's wall-clock time,
-    that day's open, that day's close) -- or None if the day doesn't reach now_time yet
-    (e.g. a half day, or a session that ended earlier)."""
     day = group.index[0].normalize()
     cutoff = day + (now_time - now_time.normalize())
     at_cutoff = group.loc[:cutoff]
@@ -20,10 +17,6 @@ def _day_pair(group: pd.DataFrame, now_time: pd.Timestamp):
 
 
 def predict_intraday_close(today_bars: pd.DataFrame, history_bars: pd.DataFrame, test_frac: float = 0.2) -> dict:
-    """Predict today's closing price from the return-so-far, using the historical
-    relationship between partial-day returns and full-day returns:
-        r_close = beta0 + beta1 * r_partial
-    """
     today_open = float(today_bars["Open"].iloc[0])
     current_price = float(today_bars["Close"].iloc[-1])
     now_time = today_bars.index[-1]

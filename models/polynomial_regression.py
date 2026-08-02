@@ -8,7 +8,6 @@ DEGREE = 2
 
 
 def perform_polynomial_regression(data, test_frac: float = 0.2):
-    """Degree-2 polynomial regression over the technical-indicator feature vector."""
     estimator = Pipeline([
         ("poly", PolynomialFeatures(degree=DEGREE, include_bias=False)),
         ("lr", LinearRegression()),

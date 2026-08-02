@@ -1,9 +1,3 @@
-"""Single source of truth for the 10 forecasting models: which function runs each one,
-what category it belongs to, and the math/explanation shown alongside its results.
-Framework-agnostic (no Streamlit/FastAPI imports) so both main.py (Streamlit) and
-api.py (FastAPI backend) can import MODELS directly without duplicating this content.
-"""
-
 from models.linear_regression import perform_linear_regression
 from models.arima import perform_arima_prediction, ORDER as ARIMA_ORDER
 from models.sarima import perform_sarima_prediction, ORDER as SARIMA_ORDER, SEASONAL_ORDER
@@ -152,10 +146,6 @@ MODELS = [
     },
 ]
 
-# Not part of MODELS -- computed dynamically from the other 10 models' own results
-# (api.py) rather than run against raw price data, so it doesn't fit the MODELS
-# run-function contract. Kept here anyway since it's still static display metadata,
-# same as everything else in this file.
 ENSEMBLE_META = {
     "key": "ensemble",
     "name": "Ensemble (Weighted Average)",

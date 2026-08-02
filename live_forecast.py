@@ -1,9 +1,3 @@
-"""Live intraday close prediction: fetch today's bars so far, predict the closing
-price via models/intraday_regression.py, persist the prediction in a local SQLite DB,
-and lazily backfill each day's actual close once it's known. No scheduler/cron --
-everything resolves the next time get_live_forecast() is called.
-"""
-
 import sqlite3
 import time
 from pathlib import Path
@@ -12,7 +6,7 @@ from data_fetcher import fetch_data, fetch_intraday
 from models.intraday_regression import predict_intraday_close
 
 DB_PATH = Path(__file__).parent / "data" / "predictions.db"
-HISTORY_CACHE_TTL = 15 * 60  # seconds
+HISTORY_CACHE_TTL = 15 * 60
 _history_cache: dict[tuple[str, str], tuple[float, object]] = {}
 
 
@@ -67,10 +61,6 @@ def _upsert_prediction(conn, ticker, asset_type, trade_date, predicted_close, op
 
 
 def _backfill_actual_closes(conn, ticker, asset_type, today_trade_date):
-    # Compare against the ticker's own trade_date (derived from its tz-aware bar
-    # index -- ET for stocks, UTC for crypto) rather than SQLite's date('now'),
-    # which is always UTC and would treat a stock's still-current session as
-    # already "past" during the evening ET hours after UTC has rolled to the next day.
     pending = conn.execute(
         """
         SELECT trade_date FROM intraday_predictions
@@ -140,8 +130,6 @@ def get_live_forecast(ticker: str, asset_type: str) -> dict:
         for ts, row in today_bars.iterrows()
     ]
 
-    # naive_close is the "no change" baseline: whatever the price was at the moment
-    # the prediction was made, i.e. the naive forecast that the close = current price.
     history = [
         {"trade_date": trade_date, "predicted_close": predicted, "naive_close": naive, "actual_close": actual}
         for trade_date, predicted, naive, actual in reversed(history_rows)

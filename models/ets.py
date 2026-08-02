@@ -5,7 +5,6 @@ from utils.timeseries import prep_daily_close
 
 
 def perform_ets_prediction(data, test_frac: float = 0.2):
-    """Holt's linear trend method: level + trend smoothing, no seasonality (daily price data)."""
     close = prep_daily_close(data)
 
     split = max(10, int(len(close) * (1 - test_frac)))
