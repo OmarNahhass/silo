@@ -26,10 +26,13 @@ warnings.filterwarnings("ignore")
 
 from concurrent.futures import ThreadPoolExecutor
 
+import time
+from collections import defaultdict
+
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from data_fetcher import fetch_data, PERIOD_OPTIONS
 from model_registry import MODELS, ENSEMBLE_META
@@ -40,14 +43,26 @@ import prediction_history
 
 app = FastAPI(title="CryptoCast API")
 
-app.add_middleware(
-    CORSMiddleware,
-    # Vite's dev port drifts (5173, 5174, ...) whenever the default is already taken,
-    # so match any localhost port instead of hardcoding one.
-    allow_origin_regex=r"http://localhost:\d+",
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# In dev, ALLOWED_ORIGINS is unset and CORS matches any localhost port (Vite's dev
+# port drifts -- 5173, 5174, ... -- whenever the default is already taken). Once
+# actually deployed, set ALLOWED_ORIGINS to the real frontend origin(s), comma-
+# separated if there's more than one (e.g. a custom domain + a platform subdomain) --
+# the wide-open localhost regex must never be what's live in production.
+_allowed_origins = os.environ.get("ALLOWED_ORIGINS")
+if _allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[o.strip() for o in _allowed_origins.split(",")],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"http://localhost:\d+",
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 live_forecast.init_db()
 prediction_history.init_db()
@@ -57,6 +72,36 @@ prediction_history.init_db()
 # releases the GIL -- so running them in a thread pool gives real wall-clock speedup
 # instead of the ~10s+ you get from running all 10 one after another.
 _model_executor = ThreadPoolExecutor(max_workers=len(MODELS))
+
+# Lightweight per-IP rate limit on the two expensive endpoints (real yfinance calls
+# plus genuinely heavy compute). This is a backup, not the primary defense -- once
+# deployed, the real protection should be rate-limiting rules at the edge (e.g.
+# Cloudflare), which work correctly across multiple server instances; this in-memory
+# counter only makes sense for a single-process deployment, which is what this is.
+_request_log: dict[str, list[float]] = defaultdict(list)
+RATE_LIMIT_WINDOW_SECONDS = 60
+RATE_LIMIT_MAX_REQUESTS = 20
+
+
+def _client_ip(request: Request) -> str:
+    # A reverse proxy (Cloudflare, etc.) sets the real visitor IP in one of these
+    # headers -- without a proxy in front (e.g. local dev), every request would
+    # otherwise look like it's coming from the proxy's own IP instead of the visitor's.
+    return (
+        request.headers.get("CF-Connecting-IP")
+        or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or (request.client.host if request.client else "unknown")
+    )
+
+
+def rate_limit(request: Request):
+    ip = _client_ip(request)
+    now = time.time()
+    recent = [t for t in _request_log[ip] if now - t < RATE_LIMIT_WINDOW_SECONDS]
+    if len(recent) >= RATE_LIMIT_MAX_REQUESTS:
+        raise HTTPException(status_code=429, detail="Too many requests -- please slow down and try again shortly.")
+    recent.append(now)
+    _request_log[ip] = recent
 
 
 def _clean_float(value):
@@ -72,7 +117,7 @@ def _series_to_points(series):
 
 
 class ForecastRequest(BaseModel):
-    ticker: str
+    ticker: str = Field(..., min_length=1, max_length=20)
     asset_type: str  # "Stock" or "Crypto"
     period: str = PERIOD_OPTIONS[2]
 
@@ -142,7 +187,7 @@ def _compute_ensemble(raw_results: list[dict], close: pd.Series) -> dict | None:
 
 
 @app.post("/api/forecast")
-def post_forecast(req: ForecastRequest):
+def post_forecast(req: ForecastRequest, _: None = Depends(rate_limit)):
     if not req.ticker.strip():
         raise HTTPException(status_code=400, detail="Ticker is required.")
 
@@ -244,7 +289,11 @@ def post_forecast(req: ForecastRequest):
 
 
 @app.get("/api/live/{asset_type}/{ticker}")
-def get_live(asset_type: str, ticker: str):
+def get_live(
+    asset_type: str,
+    ticker: str = Path(..., min_length=1, max_length=20),
+    _: None = Depends(rate_limit),
+):
     if asset_type.lower() not in ("stock", "crypto"):
         raise HTTPException(status_code=400, detail="asset_type must be 'stock' or 'crypto'")
     asset_type = "Stock" if asset_type.lower() == "stock" else "Crypto"
