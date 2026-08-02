@@ -1,0 +1,21 @@
+# Fly.io app config for the FastAPI backend only -- the frontend (frontend/) deploys
+# separately to Vercel. `app` must be globally unique on Fly; change it before deploying.
+app = "cryptocast-api"
+primary_region = "iad"
+
+[build]
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+# Persistent volume for data/predictions.db -- survives restarts and redeploys, unlike
+# the container's own ephemeral filesystem. Create it once with:
+#   fly volumes create cryptocast_data --region iad --size 1
+# before the first deploy (size is in GB; 1GB is far more than this app needs).
+[[mounts]]
+  source = "cryptocast_data"
+  destination = "/app/data"
