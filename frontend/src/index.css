@@ -1,6 +1,3 @@
-/* Minimal baseline styling, not a full design pass -- carries over the dark-gray/orange
-   palette and system font stack from the Streamlit app for a usable starting point. */
-
 :root {
   --bg: #1a1a1a;
   --surface: #262626;
@@ -16,13 +13,11 @@
   box-sizing: border-box;
 }
 
-/* Firefox */
 * {
   scrollbar-color: var(--accent) var(--bg);
   scrollbar-width: thin;
 }
 
-/* Chrome/Edge/Safari */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
@@ -149,7 +144,6 @@ h2 {
   margin-bottom: 16px;
 }
 
-/* Spacer around every Plotly chart, so headers/text never sit flush against a graph */
 .chart-wrap {
   margin: 8px 0 32px;
 }
@@ -255,10 +249,6 @@ table.leaderboard td {
   gap: 24px;
 }
 
-/* .asset-layout's own flex `gap` already provides deliberate spacing between its
-   direct children -- without this, a direct-child .muted's margin-bottom and the
-   first heading inside .asset-main both add their own margin on top of that gap,
-   compounding into a much bigger space than intended. */
 .asset-layout > .muted {
   margin-bottom: 0;
 }
@@ -401,10 +391,6 @@ table.leaderboard td {
   margin-bottom: 16px;
 }
 
-/* .asset-controls is normally a single fixed-width panel centered on its own page
-   (Stock/Crypto/Live) -- here there are two side by side, so let them share the row
-   instead of each claiming a rigid 480px (which forced them to wrap onto separate
-   lines on anything narrower than ~1000px). */
 .compare-controls .asset-controls {
   width: auto;
   flex: 1 1 320px;
@@ -522,10 +508,6 @@ table.leaderboard td {
   margin-top: 8px;
 }
 
-/* ---- Responsive: everything above assumes desktop width (fixed 240px sidebar,
-   480px settings panels, etc.) -- below a tablet-ish width, the sidebar becomes a
-   compact horizontal top bar instead of a tall left column, and every fixed-width
-   box becomes fluid so nothing can force horizontal overflow on a phone screen. ---- */
 @media (max-width: 768px) {
   .app-shell {
     flex-direction: column;

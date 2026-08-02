@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-// Shows every time the app is opened (no localStorage/persistence) -- this is a
-// standing disclaimer the user should see on every visit, not a one-time notice.
 export default function DisclaimerModal() {
   const [dismissed, setDismissed] = useState(false);
 

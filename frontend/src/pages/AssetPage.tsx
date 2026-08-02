@@ -26,8 +26,6 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const [period, setPeriod] = useState(PERIOD_OPTIONS[2]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Settings panel starts open; once a forecast has run, it collapses so the
-  // dashboard gets the full width. "Change ticker" brings it back.
   const [settingsOpen, setSettingsOpen] = useState(true);
 
   const [models, setModels] = useState<ModelMeta[]>([]);
@@ -83,9 +81,6 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
       })
     : [];
 
-  // Ranked by accuracy (lowest holdout RMSE first) rather than grouped by category --
-  // the point is that anyone unfamiliar with these models can tell at a glance which
-  // one to trust most for this specific ticker. Models that failed to run sort last.
   const ranked = matchingForecast
     ? [...matchingForecast.models]
         .filter((m) => m.error === null && m.rmse !== null)
@@ -123,6 +118,7 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
               onChange={(t) => setTicker(t.toUpperCase())}
               placeholder={`Search ${assetTypeLabel(assetType).toLowerCase()} tickers, or type any symbol...`}
               allowCreate
+              ariaLabel="Search or type any ticker symbol"
             />
           </label>
           <label>
@@ -204,6 +200,7 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
               value={selectedKey}
               onChange={setSelectedKey}
               placeholder="Search models..."
+              ariaLabel="Forecasting model"
             />
           </label>
 

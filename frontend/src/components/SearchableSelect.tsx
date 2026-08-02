@@ -6,9 +6,6 @@ interface Option {
   label: string;
 }
 
-// Matches the CSS custom properties in index.css -- react-select renders its own
-// popup outside the normal DOM flow, so plain CSS classes can't reach it; it has to
-// be styled through this `styles` override API instead.
 const darkStyles: StylesConfig<Option, false> = {
   control: (base, state) => ({
     ...base,
@@ -41,16 +38,14 @@ export default function SearchableSelect({
   onChange,
   placeholder,
   allowCreate = false,
+  ariaLabel,
 }: {
   options: Option[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  // Lets the user type a value that isn't in `options` and use it anyway -- for
-  // tickers, where the curated list is just a shortcut, not the full set of what's
-  // actually searchable against the API. Never set this for fixed-choice dropdowns
-  // (e.g. the model picker), where every valid value is already in `options`.
   allowCreate?: boolean;
+  ariaLabel?: string;
 }) {
   const selected = options.find((o) => o.value === value) ?? (allowCreate && value ? { value, label: value } : null);
   const Component = allowCreate ? Creatable : Select;
@@ -63,6 +58,7 @@ export default function SearchableSelect({
       placeholder={placeholder ?? "Search..."}
       styles={darkStyles}
       isSearchable
+      aria-label={ariaLabel}
       formatCreateLabel={allowCreate ? (input: string) => `Use "${input.toUpperCase()}"` : undefined}
     />
   );

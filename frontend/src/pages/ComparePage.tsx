@@ -50,6 +50,7 @@ function SlotControls({
           onChange={(ticker) => onChange({ ...slot, ticker: ticker.toUpperCase() })}
           placeholder={`Search ${assetTypeLabel(slot.assetType).toLowerCase()} tickers, or type any symbol...`}
           allowCreate
+          ariaLabel={`Search or type any ticker symbol for ${label}`}
         />
       </label>
     </div>
@@ -105,16 +106,19 @@ export default function ComparePage() {
   const pctA = bestA && forecastA ? pctChange(bestA, forecastA.last_close) : null;
   const pctB = bestB && forecastB ? pctChange(bestB, forecastB.last_close) : null;
 
-  // Pair up models by key so the table can show both tickers' numbers on the same row,
-  // even if a model failed on one side but not the other.
   const modelRows =
     forecastA && forecastB
-      ? forecastA.models.map((mA) => ({
-          key: mA.key,
-          name: mA.name,
-          a: mA,
-          b: forecastB.models.find((m) => m.key === mA.key),
-        }))
+      ? forecastA.models
+          .map((mA) => ({
+            key: mA.key,
+            name: mA.name,
+            a: mA,
+            b: forecastB.models.find((m) => m.key === mA.key),
+          }))
+          .sort((r1, r2) => {
+            const avgRmse = (row: (typeof r1)) => ((row.a.rmse ?? Infinity) + (row.b?.rmse ?? Infinity)) / 2;
+            return avgRmse(r1) - avgRmse(r2);
+          })
       : [];
 
   return (

@@ -1,4 +1,4 @@
-import Plot from "react-plotly.js";
+import Plot from "../plotly";
 import type { PriceBar, ModelResult } from "../types";
 import { COLORS, PLOTLY_CONFIG, PLOTLY_LAYOUT_BASE } from "../theme";
 

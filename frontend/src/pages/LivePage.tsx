@@ -35,7 +35,6 @@ export default function LivePage() {
     }
   }
 
-  // Auto-refresh whichever ticker is currently tracked, every 60s, while this page is mounted.
   useEffect(() => {
     if (!live) return;
     const id = setInterval(() => {
@@ -75,6 +74,7 @@ export default function LivePage() {
               onChange={(t) => setTicker(t.toUpperCase())}
               placeholder={`Search ${assetTypeLabel(assetType).toLowerCase()} tickers, or type any symbol...`}
               allowCreate
+              ariaLabel="Search or type any ticker symbol"
             />
           </label>
           <button className="run-button" onClick={() => track(ticker)} disabled={loading}>
@@ -103,11 +103,14 @@ export default function LivePage() {
                   <div className="metric-tile">
                     <div className="metric-label">Today's Predicted Close</div>
                     <div className="metric-value">${live.predicted_close.toFixed(2)}</div>
-                    {delta !== null && (
-                      <div className={"metric-delta " + (delta >= 0 ? "up" : "down")}>
-                        {delta >= 0 ? "↑" : "↓"} {Math.abs(delta).toFixed(2)} from current
-                      </div>
-                    )}
+                    {delta !== null &&
+                      (Math.abs(delta) < 0.005 ? (
+                        <div className="metric-delta">No change from current</div>
+                      ) : (
+                        <div className={"metric-delta " + (delta >= 0 ? "up" : "down")}>
+                          {delta >= 0 ? "↑" : "↓"} {Math.abs(delta).toFixed(2)} from current
+                        </div>
+                      ))}
                   </div>
                 ) : (
                   <div className="metric-tile metric-tile-error">

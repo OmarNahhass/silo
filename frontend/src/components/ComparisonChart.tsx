@@ -1,10 +1,7 @@
-import Plot from "react-plotly.js";
+import Plot from "../plotly";
 import type { PriceBar } from "../types";
 import { COLORS, PLOTLY_CONFIG, PLOTLY_LAYOUT_BASE } from "../theme";
 
-// Stocks and crypto trade at wildly different price scales (e.g. $340 vs $63,000), so
-// plotting raw price wouldn't let you compare them on one chart -- normalize both to
-// "% change since the start of this period" instead.
 function toPctChange(bars: PriceBar[]): number[] {
   const base = bars.find((b) => b.close !== null)?.close;
   if (!base) return bars.map(() => 0);
