@@ -41,12 +41,14 @@ export default function HomePage() {
           {outerNodes.map((n) => (
             <line key={`line-${n.label}`} x1={CENTER} y1={CENTER} x2={n.cx} y2={n.cy} stroke="var(--border)" strokeWidth={2} />
           ))}
-          <rect x={CENTER - HUB.w / 2} y={CENTER - HUB.h / 2} width={HUB.w} height={HUB.h} rx={14} fill="var(--accent)" />
-          <text x={CENTER} y={CENTER + 5} textAnchor="middle" fill="white" fontSize={15} fontWeight={800}>
-            Ensemble
-          </text>
+          <g className="roadmap-node">
+            <rect x={CENTER - HUB.w / 2} y={CENTER - HUB.h / 2} width={HUB.w} height={HUB.h} rx={14} fill="var(--accent)" />
+            <text x={CENTER} y={CENTER + 5} textAnchor="middle" fill="white" fontSize={15} fontWeight={800}>
+              Ensemble
+            </text>
+          </g>
           {outerNodes.map((n) => (
-            <g key={n.label}>
+            <g key={n.label} className="roadmap-node">
               <rect
                 x={n.cx - NODE.w / 2}
                 y={n.cy - NODE.h / 2}
@@ -63,6 +65,16 @@ export default function HomePage() {
             </g>
           ))}
         </svg>
+      </div>
+      <div className="home-description">
+        <p>
+          CryptoCast runs 10 different forecasting models -- statistical and machine learning
+          -- plus a weighted ensemble that combines them, on real stock and cryptocurrency
+          price history to predict the next trading day's closing price. It tracks live
+          intraday predictions against what actually happens, and lets you compare two
+          tickers side by side, with the math and methodology shown alongside every
+          prediction.
+        </p>
       </div>
     </div>
   );
