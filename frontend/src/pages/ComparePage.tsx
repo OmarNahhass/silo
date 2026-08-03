@@ -135,21 +135,23 @@ export default function ComparePage() {
         <SlotControls label="Ticker B" slot={slotB} onChange={setSlotB} />
       </div>
 
-      <label className="period-label">
-        History length
-        <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-          {PERIOD_OPTIONS.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="compare-submit">
+        <label className="period-label">
+          History length
+          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+            {PERIOD_OPTIONS.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <button className="run-button compare-button" onClick={handleCompare} disabled={loading}>
-        {loading ? "Comparing..." : "Compare"}
-      </button>
-      {error && <p className="error-text">{error}</p>}
+        <button className="run-button compare-button" onClick={handleCompare} disabled={loading}>
+          {loading ? "Comparing..." : "Compare"}
+        </button>
+        {error && <p className="error-text">{error}</p>}
+      </div>
 
       {forecastA && forecastB && (
         <>

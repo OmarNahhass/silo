@@ -1,10 +1,10 @@
 export const COLORS = {
   actual: "#d4d4d4",
-  fit: "#f97316",
+  fit: "#6366f1",
   forecast: "#fbbf24",
   up: "#22c55e",
   down: "#ef4444",
-  compareA: "#f97316",
+  compareA: "#6366f1",
   compareB: "#38bdf8",
 };
 
@@ -22,9 +22,9 @@ export const PLOTLY_CONFIG = {
 };
 
 export const PLOTLY_LAYOUT_BASE = {
-  paper_bgcolor: "#1a1a1a",
-  plot_bgcolor: "#1a1a1a",
-  font: { color: "#e5e5e5", family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+  paper_bgcolor: "#0a0a0b",
+  plot_bgcolor: "#0a0a0b",
+  font: { color: "#f4f4f5", family: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
   margin: { l: 50, r: 10, t: 50, b: 40 },
   dragmode: "pan" as const,
   hovermode: "x unified" as const,
