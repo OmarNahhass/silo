@@ -24,6 +24,7 @@ from utils.metrics import rmse
 from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
 import live_forecast
 import prediction_history
+from analyst_targets import get_analyst_target
 
 app = FastAPI(title="CryptoCast API")
 
@@ -254,3 +255,24 @@ def get_live(
         return live_forecast.get_live_forecast(ticker, asset_type)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Couldn't fetch live data for {ticker}: {e}")
+
+
+@app.get("/api/analyst-target/{asset_type}/{ticker}")
+def get_analyst_target_endpoint(
+    asset_type: str,
+    ticker: str = Path(..., min_length=1, max_length=20),
+    _: None = Depends(rate_limit),
+):
+    if asset_type.lower() not in ("stock", "crypto"):
+        raise HTTPException(status_code=400, detail="asset_type must be 'stock' or 'crypto'")
+    asset_type = "Stock" if asset_type.lower() == "stock" else "Crypto"
+
+    if not ticker.strip():
+        raise HTTPException(status_code=400, detail="Ticker is required.")
+
+    try:
+        target = get_analyst_target(ticker, asset_type)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Couldn't fetch analyst data for {ticker}: {e}")
+
+    return {"ticker": ticker.strip().upper(), "asset_type": asset_type, "target": target}

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { getTickers, postForecast } from "../api";
-import type { AssetType, ForecastResponse, ModelResult } from "../types";
+import { getTickers, postForecast, getAnalystTarget } from "../api";
+import type { AnalystTarget, AssetType, ForecastResponse, ModelResult } from "../types";
 import ComparisonChart from "../components/ComparisonChart";
+import AnalystComparisonChart from "../components/AnalystComparisonChart";
 import SearchableSelect from "../components/SearchableSelect";
 import InfoTip from "../components/InfoTip";
 import { assetTypeLabel } from "../assetTypeLabel";
@@ -65,6 +66,9 @@ export default function ComparePage() {
   const [error, setError] = useState<string | null>(null);
   const [forecastA, setForecastA] = useState<ForecastResponse | null>(null);
   const [forecastB, setForecastB] = useState<ForecastResponse | null>(null);
+  const [targetA, setTargetA] = useState<AnalystTarget | null>(null);
+  const [targetB, setTargetB] = useState<AnalystTarget | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   useEffect(() => {
     getTickers(slotA.assetType).then((r) =>
@@ -86,12 +90,19 @@ export default function ComparePage() {
     setLoading(true);
     setError(null);
     try {
-      const [a, b] = await Promise.all([
-        postForecast(slotA.ticker.trim().toUpperCase(), slotA.assetType, period),
-        postForecast(slotB.ticker.trim().toUpperCase(), slotB.assetType, period),
+      const tickerA = slotA.ticker.trim().toUpperCase();
+      const tickerB = slotB.ticker.trim().toUpperCase();
+      const [a, b, tA, tB] = await Promise.all([
+        postForecast(tickerA, slotA.assetType, period),
+        postForecast(tickerB, slotB.assetType, period),
+        getAnalystTarget(slotA.assetType, tickerA).catch(() => null),
+        getAnalystTarget(slotB.assetType, tickerB).catch(() => null),
       ]);
       setForecastA(a);
       setForecastB(b);
+      setTargetA(tA?.target ?? null);
+      setTargetB(tB?.target ?? null);
+      setSettingsOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -123,39 +134,50 @@ export default function ComparePage() {
 
   return (
     <div className="page">
-      <h2>Compare Two Tickers</h2>
+      <div className="asset-main-header">
+        <h2>Compare Two Tickers</h2>
+        {forecastA && forecastB && (
+          <button className="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
+            {settingsOpen ? "Hide settings" : "Change tickers"}
+          </button>
+        )}
+      </div>
       <p className="muted">
         Run the same 10 forecasting models on two tickers side by side -- a stock vs. a stock, a
         cryptocurrency vs. a cryptocurrency, or a stock vs. a cryptocurrency -- to see which one
         each model expects to have the better <strong>next trading day's closing price</strong>.
       </p>
 
-      <div className="compare-controls">
-        <SlotControls label="Ticker A" slot={slotA} onChange={setSlotA} />
-        <SlotControls label="Ticker B" slot={slotB} onChange={setSlotB} />
-      </div>
+      {settingsOpen && (
+        <>
+          <div className="compare-controls">
+            <SlotControls label="Ticker A" slot={slotA} onChange={setSlotA} />
+            <SlotControls label="Ticker B" slot={slotB} onChange={setSlotB} />
+          </div>
 
-      <div className="compare-submit">
-        <label className="period-label">
-          History length
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            {PERIOD_OPTIONS.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="compare-submit">
+            <label className="period-label">
+              History length
+              <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+                {PERIOD_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <button className="run-button compare-button" onClick={handleCompare} disabled={loading}>
-          {loading ? "Comparing..." : "Compare"}
-        </button>
-        {error && <p className="error-text">{error}</p>}
-      </div>
+            <button className="run-button compare-button" onClick={handleCompare} disabled={loading}>
+              {loading ? "Comparing..." : "Compare"}
+            </button>
+            {error && <p className="error-text">{error}</p>}
+          </div>
+        </>
+      )}
 
       {forecastA && forecastB && (
         <>
-          <div className="tile-grid">
+          <div className="tile-grid compare-tile-grid">
             <div className="metric-tile">
               <div className="metric-label">{forecastA.ticker}</div>
               <div className="metric-category">Most accurate: {bestA?.name ?? "n/a"}</div>
@@ -238,6 +260,76 @@ export default function ComparePage() {
               </tbody>
             </table>
           </div>
+
+          {(targetA || targetB) && (
+            <>
+              <h3>
+                Analyst consensus
+                <InfoTip text="Wall Street analysts' average 12-month price target -- a much longer horizon than the models above, which predict tomorrow's close. Shown for context, not as another next-day forecast. Crypto has no analyst-target concept, so it shows no coverage." />
+              </h3>
+              <div className="tile-grid compare-tile-grid">
+                <div className="metric-tile">
+                  <div className="metric-label">{forecastA.ticker}</div>
+                  {targetA ? (
+                    <>
+                      <div className="metric-value-label">Mean 12-Month Target</div>
+                      <div className="metric-value">${targetA.mean.toFixed(2)}</div>
+                      <div className="metric-rmse">
+                        Range {targetA.low !== null ? `$${targetA.low.toFixed(2)}` : "—"}
+                        {" – "}
+                        {targetA.high !== null ? `$${targetA.high.toFixed(2)}` : "—"}
+                        {targetA.num_analysts !== null ? ` · ${targetA.num_analysts} analysts` : ""}
+                        {targetA.recommendation ? ` · ${targetA.recommendation}` : ""}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="metric-error">No analyst coverage</div>
+                  )}
+                </div>
+                <div className="metric-tile">
+                  <div className="metric-label">{forecastB.ticker}</div>
+                  {targetB ? (
+                    <>
+                      <div className="metric-value-label">Mean 12-Month Target</div>
+                      <div className="metric-value">${targetB.mean.toFixed(2)}</div>
+                      <div className="metric-rmse">
+                        Range {targetB.low !== null ? `$${targetB.low.toFixed(2)}` : "—"}
+                        {" – "}
+                        {targetB.high !== null ? `$${targetB.high.toFixed(2)}` : "—"}
+                        {targetB.num_analysts !== null ? ` · ${targetB.num_analysts} analysts` : ""}
+                        {targetB.recommendation ? ` · ${targetB.recommendation}` : ""}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="metric-error">No analyst coverage</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="analyst-chart-grid">
+                {targetA && (
+                  <div className="chart-wrap">
+                    <AnalystComparisonChart
+                      ticker={forecastA.ticker}
+                      bars={forecastA.price_history}
+                      prediction={bestA?.prediction ?? null}
+                      target={targetA}
+                    />
+                  </div>
+                )}
+                {targetB && (
+                  <div className="chart-wrap">
+                    <AnalystComparisonChart
+                      ticker={forecastB.ticker}
+                      bars={forecastB.price_history}
+                      prediction={bestB?.prediction ?? null}
+                      target={targetB}
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

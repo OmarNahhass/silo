@@ -68,3 +68,18 @@ export interface LiveForecast {
   naive_mae: number | null;
   n_resolved: number;
 }
+
+export interface AnalystTarget {
+  mean: number;
+  high: number | null;
+  low: number | null;
+  median: number | null;
+  recommendation: string | null;
+  num_analysts: number | null;
+}
+
+export interface AnalystTargetResponse {
+  ticker: string;
+  asset_type: AssetType;
+  target: AnalystTarget | null;
+}
