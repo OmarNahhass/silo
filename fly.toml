@@ -1,5 +1,5 @@
 # Fly.io app config for the FastAPI backend only -- the frontend (frontend/) deploys
-# separately to Vercel. `app` must be globally unique on Fly; change it before deploying.
+# separately to Cloudflare Pages. `app` must be globally unique on Fly; change it before deploying.
 app = "cryptocast-api"
 primary_region = "iad"
 
