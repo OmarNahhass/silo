@@ -103,6 +103,7 @@ export default function ComparePage() {
       setTargetA(tA?.target ?? null);
       setTargetB(tB?.target ?? null);
       setSettingsOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

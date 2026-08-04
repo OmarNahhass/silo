@@ -1,9 +1,18 @@
-import Select, { type StylesConfig } from "react-select";
+import Select, { components, type DropdownIndicatorProps, type StylesConfig } from "react-select";
 import Creatable from "react-select/creatable";
+import { Search } from "lucide-react";
 
 interface Option {
   value: string;
   label: string;
+}
+
+function DropdownIndicator(props: DropdownIndicatorProps<Option, false>) {
+  return (
+    <components.DropdownIndicator {...props}>
+      <Search size={15} strokeWidth={2} />
+    </components.DropdownIndicator>
+  );
 }
 
 const darkStyles: StylesConfig<Option, false> = {
@@ -31,6 +40,7 @@ const darkStyles: StylesConfig<Option, false> = {
   input: (base) => ({ ...base, color: "#f4f4f5" }),
   placeholder: (base) => ({ ...base, color: "#9ca3af" }),
   indicatorSeparator: (base) => ({ ...base, backgroundColor: "rgba(255,255,255,0.08)" }),
+  dropdownIndicator: (base) => ({ ...base, color: "#9ca3af", "&:hover": { color: "#9ca3af" } }),
 };
 
 export default function SearchableSelect({
@@ -58,11 +68,10 @@ export default function SearchableSelect({
       onChange={(opt) => opt && onChange(opt.value)}
       placeholder={placeholder ?? "Search..."}
       styles={darkStyles}
+      components={{ DropdownIndicator }}
       isSearchable
       aria-label={ariaLabel}
       formatCreateLabel={allowCreate ? (input: string) => `Use "${input.toUpperCase()}"` : undefined}
     />
   );
 }
-
-export type { Option };

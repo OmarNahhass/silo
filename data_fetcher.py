@@ -33,6 +33,10 @@ def fetch_data(ticker: str, asset_type: str = "Stock", period: str = "2y"):
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.get_level_values(0)
 
+    data = data.dropna(subset=["Close"])
+    if data.empty:
+        raise ValueError(f"No data found for '{symbol}'. Check the ticker symbol and try again.")
+
     data.index.name = "Date"
     _data_cache[cache_key] = (now, data)
     return data.copy()

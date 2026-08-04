@@ -25,8 +25,26 @@ def init_db():
         )
         """
     )
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(daily_predictions)").fetchall()}
+    if "prior_close" not in cols:
+        conn.execute("ALTER TABLE daily_predictions ADD COLUMN prior_close REAL")
     conn.commit()
     conn.close()
+
+
+def _upsert_row(conn, ticker, asset_type, model_key, as_of_date, raw_prediction, prior_close):
+    conn.execute(
+        """
+        INSERT INTO daily_predictions
+            (ticker, asset_type, model_key, as_of_date, raw_prediction, predicted_at, prior_close)
+        VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
+        ON CONFLICT(ticker, asset_type, model_key, as_of_date) DO UPDATE SET
+            raw_prediction = excluded.raw_prediction,
+            predicted_at = excluded.predicted_at,
+            prior_close = excluded.prior_close
+        """,
+        (ticker, asset_type, model_key, as_of_date, raw_prediction, prior_close),
+    )
 
 
 def _resolve_pending(conn, ticker: str, asset_type: str, close: pd.Series):
@@ -57,22 +75,13 @@ def _resolve_pending(conn, ticker: str, asset_type: str, close: pd.Series):
 def record_and_correct(
     ticker: str, asset_type: str, as_of_date: str, raw_predictions: dict, close: pd.Series
 ) -> dict:
+    prior_close = float(close.iloc[-1]) if len(close) else None
     conn = sqlite3.connect(DB_PATH)
     try:
         _resolve_pending(conn, ticker, asset_type, close)
 
         for model_key, raw in raw_predictions.items():
-            conn.execute(
-                """
-                INSERT INTO daily_predictions
-                    (ticker, asset_type, model_key, as_of_date, raw_prediction, predicted_at)
-                VALUES (?, ?, ?, ?, ?, datetime('now'))
-                ON CONFLICT(ticker, asset_type, model_key, as_of_date) DO UPDATE SET
-                    raw_prediction = excluded.raw_prediction,
-                    predicted_at = excluded.predicted_at
-                """,
-                (ticker, asset_type, model_key, as_of_date, raw),
-            )
+            _upsert_row(conn, ticker, asset_type, model_key, as_of_date, raw, prior_close)
         conn.commit()
 
         results = {}
@@ -89,3 +98,59 @@ def record_and_correct(
         return results
     finally:
         conn.close()
+
+
+def record_prediction(
+    ticker: str, asset_type: str, model_key: str, as_of_date: str, raw_prediction: float, prior_close: float | None = None
+) -> None:
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        _upsert_row(conn, ticker, asset_type, model_key, as_of_date, raw_prediction, prior_close)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_resolved_predictions(
+    ticker: str | None = None,
+    asset_type: str | None = None,
+    model_key: str | None = None,
+    since: str | None = None,
+) -> list[dict]:
+    clauses = ["actual_close IS NOT NULL"]
+    params: list = []
+    if ticker is not None:
+        clauses.append("ticker = ?")
+        params.append(ticker)
+    if asset_type is not None:
+        clauses.append("asset_type = ?")
+        params.append(asset_type)
+    if model_key is not None:
+        clauses.append("model_key = ?")
+        params.append(model_key)
+    if since is not None:
+        clauses.append("as_of_date >= ?")
+        params.append(since)
+
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        rows = conn.execute(
+            "SELECT ticker, asset_type, model_key, as_of_date, raw_prediction, actual_close, prior_close "
+            f"FROM daily_predictions WHERE {' AND '.join(clauses)} ORDER BY as_of_date",
+            params,
+        ).fetchall()
+    finally:
+        conn.close()
+
+    return [
+        {
+            "ticker": r[0],
+            "asset_type": r[1],
+            "model_key": r[2],
+            "as_of_date": r[3],
+            "raw_prediction": r[4],
+            "actual_close": r[5],
+            "prior_close": r[6],
+        }
+        for r in rows
+    ]

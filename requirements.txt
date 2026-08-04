@@ -4,6 +4,7 @@ yfinance>=1.0
 scikit-learn
 xgboost
 statsmodels
+scipy
 numpy
 pandas
 pytest

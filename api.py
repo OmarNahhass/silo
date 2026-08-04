@@ -24,6 +24,7 @@ from utils.metrics import rmse
 from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
 import live_forecast
 import prediction_history
+import track_record
 from analyst_targets import get_analyst_target
 
 app = FastAPI(title="CryptoCast API")
@@ -199,6 +200,12 @@ def post_forecast(req: ForecastRequest, _: None = Depends(rate_limit)):
     ensemble = _compute_ensemble(raw_results, close)
     if ensemble is not None:
         raw_results.append(ensemble)
+        try:
+            prediction_history.record_prediction(
+                ticker, req.asset_type, "ensemble", as_of_date, ensemble["prediction"], float(close.iloc[-1])
+            )
+        except Exception:
+            pass
 
     model_results = [
         {
@@ -276,3 +283,19 @@ def get_analyst_target_endpoint(
         raise HTTPException(status_code=400, detail=f"Couldn't fetch analyst data for {ticker}: {e}")
 
     return {"ticker": ticker.strip().upper(), "asset_type": asset_type, "target": target}
+
+
+@app.get("/api/track-record")
+def get_track_record_endpoint(asset_type: str | None = None, ticker: str | None = None, since: str | None = None):
+    if ticker and not asset_type:
+        raise HTTPException(status_code=400, detail="asset_type is required when ticker is given.")
+    if asset_type is not None:
+        if asset_type.lower() not in ("stock", "crypto"):
+            raise HTTPException(status_code=400, detail="asset_type must be 'stock' or 'crypto'")
+        asset_type = "Stock" if asset_type.lower() == "stock" else "Crypto"
+    ticker = ticker.strip().upper() if ticker else None
+
+    try:
+        return track_record.get_track_record(ticker=ticker, asset_type=asset_type, since=since)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Couldn't compute track record: {e}")

@@ -152,7 +152,7 @@ export default function HomePage() {
             </div>
           )}
           <div className="home-cta-bottom">
-            <StartForecastingMenu />
+            <StartForecastingMenu openUpward />
           </div>
         </div>
       )}

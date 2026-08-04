@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { getTickers, getModels, postForecast } from "../api";
+import { Link } from "react-router-dom";
+import { getTickers, getModels, postForecast, getTrackRecord } from "../api";
 import { useForecast } from "../context/ForecastContext";
-import type { AssetType, ModelMeta, ModelResult } from "../types";
+import type { AssetType, ModelMeta, ModelResult, TrackRecordResponse } from "../types";
 import PriceChart from "../components/PriceChart";
 import ModelDetail from "../components/ModelDetail";
 import SearchableSelect from "../components/SearchableSelect";
@@ -31,6 +32,7 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const [models, setModels] = useState<ModelMeta[]>([]);
   const [selectedKey, setSelectedKey] = useState<string>("");
   const [sortByAccuracy, setSortByAccuracy] = useState(true);
+  const [trackRecord, setTrackRecord] = useState<TrackRecordResponse | null>(null);
 
   useEffect(() => {
     getTickers(assetType).then((r) => {
@@ -44,6 +46,16 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   }, []);
 
   const matchingForecast = forecast && forecast.asset_type === assetType ? forecast : null;
+
+  useEffect(() => {
+    if (!matchingForecast) {
+      setTrackRecord(null);
+      return;
+    }
+    getTrackRecord(assetType, matchingForecast.ticker)
+      .then(setTrackRecord)
+      .catch(() => setTrackRecord(null));
+  }, [assetType, matchingForecast]);
 
   useEffect(() => {
     if (matchingForecast && !selectedKey) {
@@ -65,6 +77,7 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
       const best = mostAccurate(result.models);
       setSelectedKey(best?.key ?? result.models[0]?.key ?? "");
       setSettingsOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -143,6 +156,19 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
           <h3>
             {matchingForecast.ticker} — {matchingForecast.trading_days} trading days
           </h3>
+          {(() => {
+            const ensembleStat = trackRecord?.per_model.find((m) => m.key === "ensemble");
+            const naive = trackRecord?.naive_baseline;
+            if (!ensembleStat || !naive || ensembleStat.n_samples === 0) return null;
+            return (
+              <p className="muted">
+                Ensemble's typical error over its last {ensembleStat.n_samples} tracked day
+                {ensembleStat.n_samples === 1 ? "" : "s"} for {matchingForecast.ticker}: $
+                {ensembleStat.mae.toFixed(2)} (vs ${naive.mae.toFixed(2)} assuming no change). See the{" "}
+                <Link to="/track-record">full track record</Link>.
+              </p>
+            );
+          })()}
           <div className="chart-wrap">
             <PriceChart ticker={matchingForecast.ticker} bars={matchingForecast.price_history} />
           </div>

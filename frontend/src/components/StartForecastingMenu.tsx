@@ -9,7 +9,7 @@ const destinations = [
   { to: "/live", label: "Live Intraday", Icon: Activity },
 ];
 
-export default function StartForecastingMenu() {
+export default function StartForecastingMenu({ openUpward = false }: { openUpward?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -43,10 +43,14 @@ export default function StartForecastingMenu() {
         aria-haspopup="true"
       >
         Start forecasting
-        <ChevronDown size={16} strokeWidth={2.5} className={"start-forecasting-chevron" + (open ? " open" : "")} />
+        <ChevronDown
+          size={16}
+          strokeWidth={2.5}
+          className={"start-forecasting-chevron" + (open ? " open" : "") + (openUpward ? " flipped" : "")}
+        />
       </button>
       {open && (
-        <div className="start-forecasting-dropdown" role="menu">
+        <div className={"start-forecasting-dropdown" + (openUpward ? " open-upward" : "")} role="menu">
           {destinations.map(({ to, label, Icon }) => (
             <Link key={to} to={to} className="start-forecasting-option" role="menuitem" onClick={() => setOpen(false)}>
               <Icon size={16} strokeWidth={2} />

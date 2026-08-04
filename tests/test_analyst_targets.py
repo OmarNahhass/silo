@@ -56,9 +56,6 @@ def test_stock_with_no_analyst_coverage_returns_none():
 
 
 def test_a_none_result_is_not_cached_and_retries_next_call():
-    # A missing target could be genuine (no coverage) or a transient/incomplete
-    # fetch -- either way, don't lock in a negative result for the full TTL, since
-    # that would mask real data behind a one-off flaky response.
     empty = _fake_ticker({})
     covered = _fake_ticker({"targetMeanPrice": 563.05})
     with patch("analyst_targets.yf.Ticker", side_effect=[empty, covered]) as mock_ticker:

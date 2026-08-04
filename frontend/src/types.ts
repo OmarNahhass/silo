@@ -83,3 +83,35 @@ export interface AnalystTargetResponse {
   asset_type: AssetType;
   target: AnalystTarget | null;
 }
+
+export interface TrackRecordModelStat {
+  key: string;
+  name: string;
+  category: string;
+  n_samples: number;
+  rmse: number;
+  mae: number;
+  mape: number | null;
+}
+
+export interface NaiveBaselineStat {
+  n_samples: number;
+  rmse: number;
+  mae: number;
+}
+
+export interface EnsembleVsNaiveTest {
+  n_samples: number;
+  mean_abs_error_diff: number;
+  t_statistic: number;
+  p_value: number;
+  significant_at_0_05: boolean;
+  verdict: string;
+}
+
+export interface TrackRecordResponse {
+  scope: { ticker: string | null; asset_type: AssetType | null; since: string | null };
+  per_model: TrackRecordModelStat[];
+  naive_baseline: NaiveBaselineStat | null;
+  ensemble_vs_naive_test: EnsembleVsNaiveTest | null;
+}

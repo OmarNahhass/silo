@@ -28,6 +28,7 @@ export default function LivePage() {
     try {
       const result = await getLiveForecast(assetType, t.trim().toUpperCase());
       setLive(result);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
