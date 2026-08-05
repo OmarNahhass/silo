@@ -104,8 +104,19 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const selectedResult = matchingForecast?.models.find((m) => m.key === selectedKey);
   const selectedMeta = models.find((m) => m.key === selectedKey);
 
+  const liveStatus = loading
+    ? `Running forecast for ${ticker.trim().toUpperCase()}...`
+    : error
+      ? error
+      : matchingForecast
+        ? `Forecast loaded for ${matchingForecast.ticker}. Top model: ${ranked[0]?.name ?? "none"}.`
+        : "";
+
   return (
     <div className="page asset-layout">
+      <div aria-live="polite" className="sr-only">
+        {liveStatus}
+      </div>
       <div className="asset-main-header">
         <h2>{assetTypeLabel(assetType)} Forecasts</h2>
         {matchingForecast && (

@@ -19,34 +19,42 @@ export default function ComparisonChart({
   labelB: string;
   barsB: PriceBar[];
 }) {
+  const pctA = toPctChange(barsA);
+  const pctB = toPctChange(barsB);
+  const lastPctA = pctA[pctA.length - 1] ?? 0;
+  const lastPctB = pctB[pctB.length - 1] ?? 0;
+  const chartLabel = `Comparison chart: ${labelA} changed ${lastPctA.toFixed(1)}% and ${labelB} changed ${lastPctB.toFixed(1)}% over the period.`;
+
   return (
-    <Plot
-      data={[
-        {
-          type: "scatter",
-          mode: "lines",
-          x: barsA.map((b) => b.date),
-          y: toPctChange(barsA),
-          line: { color: COLORS.compareA, width: 2 },
-          name: labelA,
-        },
-        {
-          type: "scatter",
-          mode: "lines",
-          x: barsB.map((b) => b.date),
-          y: toPctChange(barsB),
-          line: { color: COLORS.compareB, width: 2 },
-          name: labelB,
-        },
-      ]}
-      layout={{
-        ...PLOTLY_LAYOUT_BASE,
-        title: { text: `${labelA} vs. ${labelB} — % change over the period` },
-        yaxis: { title: { text: "% change" }, ticksuffix: "%" },
-      }}
-      config={PLOTLY_CONFIG}
-      style={{ width: "100%", height: "420px" }}
-      useResizeHandler
-    />
+    <div role="img" aria-label={chartLabel}>
+      <Plot
+        data={[
+          {
+            type: "scatter",
+            mode: "lines",
+            x: barsA.map((b) => b.date),
+            y: pctA,
+            line: { color: COLORS.compareA, width: 2 },
+            name: labelA,
+          },
+          {
+            type: "scatter",
+            mode: "lines",
+            x: barsB.map((b) => b.date),
+            y: pctB,
+            line: { color: COLORS.compareB, width: 2 },
+            name: labelB,
+          },
+        ]}
+        layout={{
+          ...PLOTLY_LAYOUT_BASE,
+          title: { text: `${labelA} vs. ${labelB} — % change over the period` },
+          yaxis: { title: { text: "% change" }, ticksuffix: "%" },
+        }}
+        config={PLOTLY_CONFIG}
+        style={{ width: "100%", height: "420px" }}
+        useResizeHandler
+      />
+    </div>
   );
 }

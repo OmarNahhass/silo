@@ -133,8 +133,19 @@ export default function ComparePage() {
           })
       : [];
 
+  const liveStatus = loading
+    ? `Comparing ${slotA.ticker.trim().toUpperCase()} and ${slotB.ticker.trim().toUpperCase()}...`
+    : error
+      ? error
+      : forecastA && forecastB
+        ? `Comparison loaded for ${forecastA.ticker} and ${forecastB.ticker}.`
+        : "";
+
   return (
     <div className="page">
+      <div aria-live="polite" className="sr-only">
+        {liveStatus}
+      </div>
       <div className="asset-main-header">
         <h2>Compare Two Tickers</h2>
         {forecastA && forecastB && (

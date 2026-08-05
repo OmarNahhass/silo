@@ -67,8 +67,19 @@ export default function TrackRecordPage() {
   const naive = data?.naive_baseline ?? null;
   const ensembleStat = data?.per_model.find((m) => m.key === "ensemble") ?? null;
 
+  const liveStatus = loading
+    ? "Loading track record..."
+    : error
+      ? error
+      : data
+        ? `Track record loaded, ${data.per_model.length} model${data.per_model.length === 1 ? "" : "s"}.`
+        : "";
+
   return (
     <div className="page asset-layout">
+      <div aria-live="polite" className="sr-only">
+        {liveStatus}
+      </div>
       <div className="asset-main-header">
         <h2>Track Record</h2>
         {data && (

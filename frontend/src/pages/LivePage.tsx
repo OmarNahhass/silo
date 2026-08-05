@@ -48,8 +48,19 @@ export default function LivePage() {
 
   const delta = live && live.predicted_close !== null ? live.predicted_close - live.current_price : null;
 
+  const liveStatus = loading
+    ? `Tracking ${ticker.trim().toUpperCase()}...`
+    : error
+      ? error
+      : live
+        ? `Live forecast loaded for ${live.ticker}.`
+        : "";
+
   return (
     <div className="page">
+      <div aria-live="polite" className="sr-only">
+        {liveStatus}
+      </div>
       <h2>Live Intraday Forecast</h2>
       <p className="muted">
         Predicts today's closing price from the return so far, using the historical relationship
