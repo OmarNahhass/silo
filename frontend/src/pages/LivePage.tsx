@@ -64,8 +64,7 @@ export default function LivePage() {
       <h2>Live Intraday Forecast</h2>
       <p className="muted">
         Predicts today's closing price from the return so far, using the historical relationship
-        between partial-day and full-day returns. Data is delayed ~15-20 minutes (free Yahoo
-        Finance feed).
+        between partial-day and full-day returns.
       </p>
 
       <div className="asset-layout">

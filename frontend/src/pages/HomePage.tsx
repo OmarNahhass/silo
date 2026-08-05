@@ -55,7 +55,7 @@ export default function HomePage() {
             Unknown<span className="home-accent-dot" />
           </span>
         </h1>
-        <p className="home-sub">Utilizing data to predict future closing prices.</p>
+        <p className="home-sub">Utilizing data to predict future closing prices</p>
         <StartForecastingMenu />
       </div>
       <div className="home-hero-visual">

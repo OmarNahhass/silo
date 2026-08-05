@@ -155,8 +155,7 @@ export default function ComparePage() {
         )}
       </div>
       <p className="muted">
-        Run the same 10 forecasting models on two tickers side by side -- a stock vs. a stock, a
-        cryptocurrency vs. a cryptocurrency, or a stock vs. a cryptocurrency -- to see which one
+        Run the same 10 forecasting models on two different tickersto see which one
         each model expects to have the better <strong>next trading day's closing price</strong>.
       </p>
 

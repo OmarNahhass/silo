@@ -10,12 +10,7 @@ export default function DisclaimerModal() {
       <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
         <h2 id="disclaimer-title">Not financial advice</h2>
         <p>
-          CryptoCast is an educational project for exploring forecasting techniques --
-          statistical models, machine learning models, and an ensemble that combines them.
-          Nothing shown here is a recommendation to buy, sell, or hold anything, and its
-          predictions should not be used to make real investment or trading decisions.
-          Markets are unpredictable, and a model's past accuracy is no guarantee of future
-          results.
+    CryptoCast is a tool that showcases my knowledge in statistics. As such, it is not a tool meant literally. Do not use it to make financial decisions.
         </p>
         <button className="run-button" onClick={() => setDismissed(true)}>
           I Understand — Continue

@@ -90,8 +90,7 @@ export default function TrackRecordPage() {
       </div>
       <p className="muted">
         Every forecast this app has ever made gets checked against what actually happened the
-        next trading day. This is that history — real accuracy over time, not a one-off run,
-        including whether the ensemble actually beats just assuming the price won't move.
+        next trading day. This is that.
       </p>
 
       {settingsOpen && (
