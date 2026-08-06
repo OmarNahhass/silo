@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTickers, getTrackRecord } from "../api";
+import { useSlowLoadingHint } from "../hooks/useSlowLoadingHint";
 import type { AssetType, TrackRecordResponse } from "../types";
 import SearchableSelect from "../components/SearchableSelect";
 import TrackRecordTable from "../components/TrackRecordTable";
@@ -28,6 +29,7 @@ export default function TrackRecordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(true);
+  const showSlowHint = useSlowLoadingHint(loading);
 
   useEffect(() => {
     getTickers("Stock").then((r) => setStockTickers(r.tickers));
@@ -68,7 +70,9 @@ export default function TrackRecordPage() {
   const ensembleStat = data?.per_model.find((m) => m.key === "ensemble") ?? null;
 
   const liveStatus = loading
-    ? "Loading track record..."
+    ? showSlowHint
+      ? "Still working -- the server may be waking up from being idle, this can take up to about 30 seconds."
+      : "Loading track record..."
     : error
       ? error
       : data
@@ -139,6 +143,12 @@ export default function TrackRecordPage() {
           <button className="run-button" onClick={handleViewTrackRecord} disabled={loading}>
             {loading ? "Loading..." : "View Track Record"}
           </button>
+          {showSlowHint && (
+            <p className="muted">
+              Still working -- the server may be waking up from being idle, this can take up to
+              about 30 seconds.
+            </p>
+          )}
           {error && <p className="error-text">{error}</p>}
         </aside>
       )}

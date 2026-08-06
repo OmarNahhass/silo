@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTickers, postForecast, getAnalystTarget } from "../api";
+import { useSlowLoadingHint } from "../hooks/useSlowLoadingHint";
 import type { AnalystTarget, AssetType, ForecastResponse, ModelResult } from "../types";
 import ComparisonChart from "../components/ComparisonChart";
 import AnalystComparisonChart from "../components/AnalystComparisonChart";
@@ -69,6 +70,7 @@ export default function ComparePage() {
   const [targetA, setTargetA] = useState<AnalystTarget | null>(null);
   const [targetB, setTargetB] = useState<AnalystTarget | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(true);
+  const showSlowHint = useSlowLoadingHint(loading);
 
   useEffect(() => {
     getTickers(slotA.assetType).then((r) =>
@@ -134,7 +136,9 @@ export default function ComparePage() {
       : [];
 
   const liveStatus = loading
-    ? `Comparing ${slotA.ticker.trim().toUpperCase()} and ${slotB.ticker.trim().toUpperCase()}...`
+    ? showSlowHint
+      ? "Still working -- the server may be waking up from being idle, this can take up to about 30 seconds."
+      : `Comparing ${slotA.ticker.trim().toUpperCase()} and ${slotB.ticker.trim().toUpperCase()}...`
     : error
       ? error
       : forecastA && forecastB
@@ -181,6 +185,12 @@ export default function ComparePage() {
             <button className="run-button compare-button" onClick={handleCompare} disabled={loading}>
               {loading ? "Comparing..." : "Compare"}
             </button>
+            {showSlowHint && (
+              <p className="muted">
+                Still working -- the server may be waking up from being idle, this can take up to
+                about 30 seconds.
+              </p>
+            )}
             {error && <p className="error-text">{error}</p>}
           </div>
         </>

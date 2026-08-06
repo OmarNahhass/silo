@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTickers, getLiveForecast } from "../api";
+import { useSlowLoadingHint } from "../hooks/useSlowLoadingHint";
 import type { AssetType, LiveForecast } from "../types";
 import IntradayChart from "../components/IntradayChart";
 import SearchableSelect from "../components/SearchableSelect";
@@ -15,6 +16,7 @@ export default function LivePage() {
   const [live, setLive] = useState<LiveForecast | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const showSlowHint = useSlowLoadingHint(loading);
 
   useEffect(() => {
     setTicker("");
@@ -49,7 +51,9 @@ export default function LivePage() {
   const delta = live && live.predicted_close !== null ? live.predicted_close - live.current_price : null;
 
   const liveStatus = loading
-    ? `Tracking ${ticker.trim().toUpperCase()}...`
+    ? showSlowHint
+      ? "Still working -- the server may be waking up from being idle, this can take up to about 30 seconds."
+      : `Tracking ${ticker.trim().toUpperCase()}...`
     : error
       ? error
       : live
@@ -91,6 +95,12 @@ export default function LivePage() {
           <button className="run-button" onClick={() => track(ticker)} disabled={loading}>
             {loading ? "Loading..." : "Track"}
           </button>
+          {showSlowHint && (
+            <p className="muted">
+              Still working -- the server may be waking up from being idle, this can take up to
+              about 30 seconds.
+            </p>
+          )}
           {error && <p className="error-text">{error}</p>}
         </aside>
 

@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ForecastProvider } from "./context/ForecastContext";
+import { warmUpBackend } from "./api";
 import Navbar from "./components/Navbar";
 import DisclaimerModal from "./components/DisclaimerModal";
 import HomePage from "./pages/HomePage";
@@ -10,6 +12,10 @@ import TrackRecordPage from "./pages/TrackRecordPage";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 
 export default function App() {
+  useEffect(() => {
+    warmUpBackend();
+  }, []);
+
   return (
     <ForecastProvider>
       <BrowserRouter>

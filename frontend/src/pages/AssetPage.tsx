@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getTickers, getModels, postForecast, getTrackRecord } from "../api";
 import { useForecast } from "../context/ForecastContext";
+import { useSlowLoadingHint } from "../hooks/useSlowLoadingHint";
 import type { AssetType, ModelMeta, ModelResult, TrackRecordResponse } from "../types";
 import PriceChart from "../components/PriceChart";
 import ModelDetail from "../components/ModelDetail";
@@ -33,6 +34,7 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const [selectedKey, setSelectedKey] = useState<string>("");
   const [sortByAccuracy, setSortByAccuracy] = useState(true);
   const [trackRecord, setTrackRecord] = useState<TrackRecordResponse | null>(null);
+  const showSlowHint = useSlowLoadingHint(loading);
 
   useEffect(() => {
     getTickers(assetType).then((r) => {
@@ -105,7 +107,9 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const selectedMeta = models.find((m) => m.key === selectedKey);
 
   const liveStatus = loading
-    ? `Running forecast for ${ticker.trim().toUpperCase()}...`
+    ? showSlowHint
+      ? "Still working -- the server may be waking up from being idle, this can take up to about 30 seconds."
+      : `Running forecast for ${ticker.trim().toUpperCase()}...`
     : error
       ? error
       : matchingForecast
@@ -158,6 +162,12 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
           <button className="run-button" onClick={handleRunForecast} disabled={loading}>
             {loading ? "Running..." : "Run Forecast"}
           </button>
+          {showSlowHint && (
+            <p className="muted">
+              Still working -- the server may be waking up from being idle, this can take up to
+              about 30 seconds.
+            </p>
+          )}
           {error && <p className="error-text">{error}</p>}
         </aside>
       )}
