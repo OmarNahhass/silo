@@ -30,11 +30,19 @@ export default function TrackRecordPage() {
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(true);
   const showSlowHint = useSlowLoadingHint(loading);
+  const [tickersError, setTickersError] = useState(false);
 
-  useEffect(() => {
-    getTickers("Stock").then((r) => setStockTickers(r.tickers));
-    getTickers("Crypto").then((r) => setCryptoTickers(r.tickers));
-  }, []);
+  function loadTickers() {
+    setTickersError(false);
+    Promise.all([getTickers("Stock"), getTickers("Crypto")])
+      .then(([stock, crypto]) => {
+        setStockTickers(stock.tickers);
+        setCryptoTickers(crypto.tickers);
+      })
+      .catch(() => setTickersError(true));
+  }
+
+  useEffect(loadTickers, []);
 
   const tickerAssetType: Record<string, AssetType> = {};
   stockTickers.forEach((t) => (tickerAssetType[t] = "Stock"));
@@ -126,6 +134,15 @@ export default function TrackRecordPage() {
               placeholder="Search tickers..."
               ariaLabel="Search or type any ticker symbol"
             />
+            {tickersError && (
+              <span className="error-text">
+                Couldn't load the ticker list -- you can still type a symbol directly, or{" "}
+                <button type="button" className="link-button" onClick={loadTickers}>
+                  try again
+                </button>
+                .
+              </span>
+            )}
           </label>
           <label>
             Window

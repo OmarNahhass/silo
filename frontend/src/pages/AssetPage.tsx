@@ -34,14 +34,20 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const [selectedKey, setSelectedKey] = useState<string>("");
   const [sortByAccuracy, setSortByAccuracy] = useState(true);
   const [trackRecord, setTrackRecord] = useState<TrackRecordResponse | null>(null);
+  const [tickersError, setTickersError] = useState(false);
   const showSlowHint = useSlowLoadingHint(loading);
 
-  useEffect(() => {
-    getTickers(assetType).then((r) => {
-      setTickers(r.tickers);
-      setTicker((current) => current || r.tickers[0]);
-    });
-  }, [assetType]);
+  function loadTickers() {
+    setTickersError(false);
+    getTickers(assetType)
+      .then((r) => {
+        setTickers(r.tickers);
+        setTicker((current) => current || r.tickers[0]);
+      })
+      .catch(() => setTickersError(true));
+  }
+
+  useEffect(loadTickers, [assetType]);
 
   useEffect(() => {
     getModels().then(setModels);
@@ -148,6 +154,15 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
               allowCreate
               ariaLabel="Search or type any ticker symbol"
             />
+            {tickersError && (
+              <span className="error-text">
+                Couldn't load the ticker list -- you can still type a symbol directly, or{" "}
+                <button type="button" className="link-button" onClick={loadTickers}>
+                  try again
+                </button>
+                .
+              </span>
+            )}
           </label>
           <label>
             History length

@@ -20,16 +20,19 @@ interface Slot {
   assetType: AssetType;
   ticker: string;
   tickers: string[];
+  tickersError: boolean;
 }
 
 function SlotControls({
   label,
   slot,
   onChange,
+  onRetryTickers,
 }: {
   label: string;
   slot: Slot;
   onChange: (next: Slot) => void;
+  onRetryTickers: () => void;
 }) {
   return (
     <div className="asset-controls">
@@ -54,14 +57,23 @@ function SlotControls({
           allowCreate
           ariaLabel={`Search or type any ticker symbol for ${label}`}
         />
+        {slot.tickersError && (
+          <span className="error-text">
+            Couldn't load the ticker list -- you can still type a symbol directly, or{" "}
+            <button type="button" className="link-button" onClick={onRetryTickers}>
+              try again
+            </button>
+            .
+          </span>
+        )}
       </label>
     </div>
   );
 }
 
 export default function ComparePage() {
-  const [slotA, setSlotA] = useState<Slot>({ assetType: "Stock", ticker: "", tickers: [] });
-  const [slotB, setSlotB] = useState<Slot>({ assetType: "Crypto", ticker: "", tickers: [] });
+  const [slotA, setSlotA] = useState<Slot>({ assetType: "Stock", ticker: "", tickers: [], tickersError: false });
+  const [slotB, setSlotB] = useState<Slot>({ assetType: "Crypto", ticker: "", tickers: [], tickersError: false });
   const [period, setPeriod] = useState(PERIOD_OPTIONS[2]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,17 +84,22 @@ export default function ComparePage() {
   const [settingsOpen, setSettingsOpen] = useState(true);
   const showSlowHint = useSlowLoadingHint(loading);
 
-  useEffect(() => {
-    getTickers(slotA.assetType).then((r) =>
-      setSlotA((s) => ({ ...s, tickers: r.tickers, ticker: s.ticker || r.tickers[0] })),
-    );
-  }, [slotA.assetType]);
+  function loadTickersA() {
+    setSlotA((s) => ({ ...s, tickersError: false }));
+    getTickers(slotA.assetType)
+      .then((r) => setSlotA((s) => ({ ...s, tickers: r.tickers, ticker: s.ticker || r.tickers[0] })))
+      .catch(() => setSlotA((s) => ({ ...s, tickersError: true })));
+  }
 
-  useEffect(() => {
-    getTickers(slotB.assetType).then((r) =>
-      setSlotB((s) => ({ ...s, tickers: r.tickers, ticker: s.ticker || r.tickers[0] })),
-    );
-  }, [slotB.assetType]);
+  function loadTickersB() {
+    setSlotB((s) => ({ ...s, tickersError: false }));
+    getTickers(slotB.assetType)
+      .then((r) => setSlotB((s) => ({ ...s, tickers: r.tickers, ticker: s.ticker || r.tickers[0] })))
+      .catch(() => setSlotB((s) => ({ ...s, tickersError: true })));
+  }
+
+  useEffect(loadTickersA, [slotA.assetType]);
+  useEffect(loadTickersB, [slotB.assetType]);
 
   async function handleCompare() {
     if (!slotA.ticker.trim() || !slotB.ticker.trim()) {
@@ -166,8 +183,8 @@ export default function ComparePage() {
       {settingsOpen && (
         <>
           <div className="compare-controls">
-            <SlotControls label="Ticker A" slot={slotA} onChange={setSlotA} />
-            <SlotControls label="Ticker B" slot={slotB} onChange={setSlotB} />
+            <SlotControls label="Ticker A" slot={slotA} onChange={setSlotA} onRetryTickers={loadTickersA} />
+            <SlotControls label="Ticker B" slot={slotB} onChange={setSlotB} onRetryTickers={loadTickersB} />
           </div>
 
           <div className="compare-submit">

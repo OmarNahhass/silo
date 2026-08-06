@@ -16,12 +16,18 @@ export default function LivePage() {
   const [live, setLive] = useState<LiveForecast | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tickersError, setTickersError] = useState(false);
   const showSlowHint = useSlowLoadingHint(loading);
 
-  useEffect(() => {
+  function loadTickers() {
     setTicker("");
-    getTickers(assetType).then((r) => setTickers(r.tickers));
-  }, [assetType]);
+    setTickersError(false);
+    getTickers(assetType)
+      .then((r) => setTickers(r.tickers))
+      .catch(() => setTickersError(true));
+  }
+
+  useEffect(loadTickers, [assetType]);
 
   async function track(t: string) {
     if (!t.trim()) return;
@@ -91,6 +97,15 @@ export default function LivePage() {
               allowCreate
               ariaLabel="Search or type any ticker symbol"
             />
+            {tickersError && (
+              <span className="error-text">
+                Couldn't load the ticker list -- you can still type a symbol directly, or{" "}
+                <button type="button" className="link-button" onClick={loadTickers}>
+                  try again
+                </button>
+                .
+              </span>
+            )}
           </label>
           <button className="run-button" onClick={() => track(ticker)} disabled={loading}>
             {loading ? "Loading..." : "Track"}
