@@ -13,3 +13,8 @@ primary_region = "iad"
 [[mounts]]
   source = "cryptocast_data"
   destination = "/app/data"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "1gb"

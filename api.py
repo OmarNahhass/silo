@@ -48,7 +48,7 @@ else:
 live_forecast.init_db()
 prediction_history.init_db()
 
-_model_executor = ThreadPoolExecutor(max_workers=len(MODELS))
+_model_executor = ThreadPoolExecutor(max_workers=4)
 
 _request_log: dict[str, list[float]] = defaultdict(list)
 RATE_LIMIT_WINDOW_SECONDS = 60
