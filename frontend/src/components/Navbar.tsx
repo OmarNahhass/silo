@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { TrendingUp, BarChart3, Coins, Activity, ArrowLeftRight, History } from "lucide-react";
 
 const links = [
@@ -10,6 +10,8 @@ const links = [
 ];
 
 export default function Navbar() {
+  const location = useLocation();
+
   return (
     <header className="navbar">
       <div className="navbar-inner">
@@ -23,6 +25,12 @@ export default function Navbar() {
               key={to}
               to={to}
               className={({ isActive }) => "nav-link" + (isActive ? " active" : "")}
+              onClick={(e) => {
+                if (location.pathname === to) {
+                  e.preventDefault();
+                  window.location.reload();
+                }
+              }}
             >
               <Icon size={16} strokeWidth={2} />
               {label}
