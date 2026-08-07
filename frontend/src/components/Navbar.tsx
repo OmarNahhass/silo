@@ -17,7 +17,7 @@ export default function Navbar() {
       <div className="navbar-inner">
         <Link to="/" className="brand">
           <TrendingUp size={20} strokeWidth={2.5} />
-          SiloScope
+          Silo
         </Link>
         <nav className="navbar-nav">
           {links.map(({ to, label, Icon }) => (

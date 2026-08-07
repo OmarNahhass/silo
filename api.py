@@ -27,7 +27,7 @@ import prediction_history
 import track_record
 from analyst_targets import get_analyst_target
 
-app = FastAPI(title="SiloScope API")
+app = FastAPI(title="Silo API")
 
 _allowed_origins = os.environ.get("ALLOWED_ORIGINS")
 if _allowed_origins:

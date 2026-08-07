@@ -1,6 +1,6 @@
 # Class Diagram
 
-A conceptual model of SiloScope's domain -- the backend is implemented functionally (plain
+A conceptual model of Silo's domain -- the backend is implemented functionally (plain
 dicts and functions, not these classes literally), but this is the shape of the data as it flows
 through the system.
 

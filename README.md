@@ -1,6 +1,6 @@
-# SiloScope
+# Silo
 
-SiloScope runs 10 forecasting models -- statistical and machine learning -- plus a weighted
+Silo runs 10 forecasting models -- statistical and machine learning -- plus a weighted
 ensemble that combines them, on real stock and cryptocurrency price history to predict the next
 trading day's closing price. It tracks live intraday predictions against what actually happens,
 lets you compare two tickers side by side, and keeps an honest, ongoing record of how accurate its
