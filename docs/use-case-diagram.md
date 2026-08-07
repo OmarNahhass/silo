@@ -4,7 +4,7 @@
 flowchart LR
     User(["🧑 User"])
 
-    subgraph System["CryptoCast"]
+    subgraph System["SiloScope"]
         UC1(["Run Stock Forecast"])
         UC2(["Run Crypto Forecast"])
         UC3(["Compare Two Tickers"])

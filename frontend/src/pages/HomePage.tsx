@@ -110,7 +110,7 @@ export default function HomePage() {
       </div>
       <div className="home-description">
         <p>
-          CryptoCast runs 10 different forecasting models -- statistical and machine learning
+          SiloScope runs 10 different forecasting models -- statistical and machine learning
           -- plus a weighted ensemble that combines them, on real stock and cryptocurrency
           price history to predict the next trading day's closing price. It tracks live
           intraday predictions against what actually happens, and lets you compare two
