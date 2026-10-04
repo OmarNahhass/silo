@@ -25,6 +25,7 @@ from utils.tickers import STOCK_TICKERS, CRYPTO_TICKERS
 import live_forecast
 import prediction_history
 import track_record
+import similarity
 from analyst_targets import get_analyst_target
 
 app = FastAPI(title="Silo API")
@@ -283,6 +284,28 @@ def get_analyst_target_endpoint(
         raise HTTPException(status_code=400, detail=f"Couldn't fetch analyst data for {ticker}: {e}")
 
     return {"ticker": ticker.strip().upper(), "asset_type": asset_type, "target": target}
+
+
+@app.get("/api/similar-tickers/{asset_type}/{ticker}")
+def get_similar_tickers_endpoint(
+    asset_type: str,
+    ticker: str = Path(..., min_length=1, max_length=20),
+    top_n: int = 10,
+    _: None = Depends(rate_limit),
+):
+    if asset_type.lower() not in ("stock", "crypto"):
+        raise HTTPException(status_code=400, detail="asset_type must be 'stock' or 'crypto'")
+    asset_type = "Stock" if asset_type.lower() == "stock" else "Crypto"
+
+    if not ticker.strip():
+        raise HTTPException(status_code=400, detail="Ticker is required.")
+
+    try:
+        results = similarity.get_similar_tickers(ticker, asset_type, top_n=top_n)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Couldn't compute similar tickers for {ticker}: {e}")
+
+    return {"ticker": ticker.strip().upper(), "asset_type": asset_type, "results": results}
 
 
 @app.get("/api/track-record")

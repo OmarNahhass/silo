@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getTickers, getModels, postForecast, getTrackRecord } from "../api";
+import { getTickers, getModels, postForecast, getTrackRecord, getSimilarTickers } from "../api";
 import { useForecast } from "../context/ForecastContext";
 import { useSlowLoadingHint } from "../hooks/useSlowLoadingHint";
-import type { AssetType, ModelMeta, ModelResult, TrackRecordResponse } from "../types";
+import type { AssetType, ModelMeta, ModelResult, TrackRecordResponse, SimilarTickersResponse } from "../types";
 import PriceChart from "../components/PriceChart";
 import ModelDetail from "../components/ModelDetail";
 import SearchableSelect from "../components/SearchableSelect";
 import InfoTip from "../components/InfoTip";
 import MetricTile from "../components/MetricTile";
 import Leaderboard from "../components/Leaderboard";
+import SimilarTickers from "../components/SimilarTickers";
 import { assetTypeLabel } from "../assetTypeLabel";
 
 const PERIOD_OPTIONS = ["6mo", "1y", "2y", "5y", "max"];
@@ -35,7 +36,11 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
   const [sortByAccuracy, setSortByAccuracy] = useState(true);
   const [trackRecord, setTrackRecord] = useState<TrackRecordResponse | null>(null);
   const [tickersError, setTickersError] = useState(false);
+  const [similarTickers, setSimilarTickers] = useState<SimilarTickersResponse | null>(null);
+  const [similarError, setSimilarError] = useState(false);
+  const [similarLoading, setSimilarLoading] = useState(false);
   const showSlowHint = useSlowLoadingHint(loading);
+  const showSimilarSlowHint = useSlowLoadingHint(similarLoading);
 
   function loadTickers() {
     setTickersError(false);
@@ -64,6 +69,22 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
       .then(setTrackRecord)
       .catch(() => setTrackRecord(null));
   }, [assetType, matchingForecast]);
+
+  function loadSimilarTickers() {
+    if (!matchingForecast) {
+      setSimilarTickers(null);
+      setSimilarError(false);
+      return;
+    }
+    setSimilarLoading(true);
+    setSimilarError(false);
+    getSimilarTickers(assetType, matchingForecast.ticker)
+      .then((r) => setSimilarTickers(r))
+      .catch(() => setSimilarError(true))
+      .finally(() => setSimilarLoading(false));
+  }
+
+  useEffect(loadSimilarTickers, [assetType, matchingForecast]);
 
   useEffect(() => {
     if (matchingForecast && !selectedKey) {
@@ -205,6 +226,33 @@ export default function AssetPage({ assetType }: { assetType: AssetType }) {
               </p>
             );
           })()}
+
+          <h4>
+            Similar Tickers
+            <InfoTip text="Other tickers whose current technical-indicator pattern (momentum, trend, volatility) most closely resembles this one, ranked by cosine similarity. This is about recent price behavior, not whether the companies are actually related." />
+          </h4>
+          {similarLoading && !similarTickers && (
+            <p className="muted">
+              Finding similar tickers...
+              {showSimilarSlowHint && (
+                <>
+                  {" "}
+                  Still working -- this can take longer the first time, up to about 30 seconds.
+                </>
+              )}
+            </p>
+          )}
+          {similarError && (
+            <p className="error-text">
+              Couldn't load similar tickers.{" "}
+              <button type="button" className="link-button" onClick={loadSimilarTickers}>
+                try again
+              </button>
+              .
+            </p>
+          )}
+          {similarTickers && <SimilarTickers results={similarTickers.results} />}
+
           <div className="chart-wrap">
             <PriceChart ticker={matchingForecast.ticker} bars={matchingForecast.price_history} />
           </div>

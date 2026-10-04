@@ -4,6 +4,7 @@ import type {
   ForecastResponse,
   LiveForecast,
   ModelMeta,
+  SimilarTickersResponse,
   TrackRecordResponse,
 } from "./types";
 
@@ -76,6 +77,17 @@ export function getAnalystTarget(assetType: AssetType, ticker: string): Promise<
   return fetchWithRetry(`${API_BASE}/api/analyst-target/${assetType.toLowerCase()}/${ticker}`).then((r) =>
     handle<AnalystTargetResponse>(r),
   );
+}
+
+export function getSimilarTickers(
+  assetType: AssetType,
+  ticker: string,
+  topN = 10,
+): Promise<SimilarTickersResponse> {
+  const params = new URLSearchParams({ top_n: String(topN) });
+  return fetchWithRetry(
+    `${API_BASE}/api/similar-tickers/${assetType.toLowerCase()}/${ticker}?${params.toString()}`,
+  ).then((r) => handle<SimilarTickersResponse>(r));
 }
 
 export function getTrackRecord(

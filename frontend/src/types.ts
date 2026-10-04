@@ -115,3 +115,14 @@ export interface TrackRecordResponse {
   naive_baseline: NaiveBaselineStat | null;
   ensemble_vs_naive_test: EnsembleVsNaiveTest | null;
 }
+
+export interface SimilarTickerResult {
+  ticker: string;
+  similarity: number;
+}
+
+export interface SimilarTickersResponse {
+  ticker: string;
+  asset_type: AssetType;
+  results: SimilarTickerResult[];
+}
